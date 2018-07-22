@@ -19,7 +19,7 @@ import Foundation
  A subclass of `UITextField` that allows for setting the padding around the text.
  */
 @objc(BKYInsetTextField)
-open class InsetTextField: UITextField {
+@objcMembers open class InsetTextField: UITextField {
   // MARK: - Properties
 
   /// The amount of padding that should be added around the text
@@ -43,7 +43,7 @@ open class InsetTextField: UITextField {
    - returns: The `CGRect` including the padding.
    */
   open override func textRect(forBounds bounds: CGRect) -> CGRect {
-    return UIEdgeInsetsInsetRect(bounds, _uiEdgeInsetPadding)
+    return textAlignment == .center ? bounds : UIEdgeInsetsInsetRect(bounds, _uiEdgeInsetPadding)
   }
 
   /**
@@ -53,6 +53,6 @@ open class InsetTextField: UITextField {
    - returns: The `CGRect` including the padding.
    */
   open override func editingRect(forBounds bounds: CGRect) -> CGRect {
-    return UIEdgeInsetsInsetRect(bounds, _uiEdgeInsetPadding)
+    return textAlignment == .center ? bounds : UIEdgeInsetsInsetRect(bounds, _uiEdgeInsetPadding)
   }
 }

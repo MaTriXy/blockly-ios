@@ -19,12 +19,7 @@ import Foundation
  A view controller for displaying blocks in a trash can.
  */
 @objc(BKYTrashCanViewController)
-public final class TrashCanViewController: WorkspaceViewController {
-
-  // MARK: - Static Properties
-
-  /// Default background color to use for `view`
-  private static let ViewBackgroundColor = UIColor(white: 0.6, alpha: 0.65)
+@objcMembers public final class TrashCanViewController: WorkspaceViewController {
 
   // MARK: - Properties
 
@@ -85,7 +80,6 @@ public final class TrashCanViewController: WorkspaceViewController {
 
     workspaceView.allowCanvasPadding = false
 
-    view.backgroundColor = TrashCanViewController.ViewBackgroundColor
     view.addObserver(self, forKeyPath: "bounds",
       options: NSKeyValueObservingOptions.new, context: &self._kvoContextBounds)
 

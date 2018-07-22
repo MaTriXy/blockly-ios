@@ -19,7 +19,7 @@ import Foundation
  Class for a `FieldLabel`-based `Layout`.
  */
 @objc(BKYFieldLabelLayout)
-open class FieldLabelLayout: FieldLayout {
+@objcMembers open class FieldLabelLayout: FieldLayout {
 
   // MARK: - Properties
 
@@ -43,12 +43,5 @@ open class FieldLabelLayout: FieldLayout {
   public init(fieldLabel: FieldLabel, engine: LayoutEngine, measurer: FieldLayoutMeasurer.Type) {
     self.fieldLabel = fieldLabel
     super.init(field: fieldLabel, engine: engine, measurer: measurer)
-  }
-
-  // MARK: - Super
-
-  open override func didUpdateField(_ field: Field) {
-    // Perform a layout up the tree
-    updateLayoutUpTree()
   }
 }

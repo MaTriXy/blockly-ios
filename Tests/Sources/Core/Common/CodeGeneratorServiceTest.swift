@@ -77,8 +77,6 @@ class CodeGeneratorServiceTest: XCTestCase {
     builder.addJSONBlockDefinitionFiles(fromDefaultFiles: .allDefault)
     _codeGeneratorService.setRequestBuilder(builder, shouldCache: false)
 
-    let abc = ""
-
     // Execute request
     let _ = BKYAssertDoesNotThrow {
       try _codeGeneratorService.generateCode(
@@ -93,8 +91,8 @@ class CodeGeneratorServiceTest: XCTestCase {
       })
     }
 
-    // Wait 10s for code generation to finish
-    waitForExpectations(timeout: 10.0, handler: { error in
+    // Wait 30s for code generation to finish
+    waitForExpectations(timeout: 30.0, handler: { error in
       if let error = error {
         XCTFail("Code generation timed out: \(error)")
       }
@@ -128,7 +126,7 @@ class CodeGeneratorServiceTest: XCTestCase {
 
     let testBundle = Bundle(for: type(of: self))
 
-    for _ in 0 ..< 100 {
+    for _ in 0 ..< 10 {
       // Set up timeout expectation
       let expectation = self.expectation(description: "Code Generation")
 
@@ -153,8 +151,8 @@ class CodeGeneratorServiceTest: XCTestCase {
       }
     }
 
-    // Wait 100s for code generation to finish
-    waitForExpectations(timeout: 100.0, handler: { error in
+    // Wait 300s for code generation to finish
+    waitForExpectations(timeout: 300.0, handler: { error in
       if let error = error {
         XCTFail("Code generation timed out: \(error)")
       }
@@ -216,8 +214,8 @@ class CodeGeneratorServiceTest: XCTestCase {
         })
     }
 
-    // Wait 10s for code generation to finish
-    waitForExpectations(timeout: 10.0, handler: { error in
+    // Wait 30s for code generation to finish
+    waitForExpectations(timeout: 30.0, handler: { error in
       if let error = error {
         XCTFail("Code generation timed out: \(error)")
       }
@@ -284,8 +282,8 @@ class CodeGeneratorServiceTest: XCTestCase {
       })
     }
 
-    // Wait 10s for code generation to finish
-    waitForExpectations(timeout: 10.0, handler: { error in
+    // Wait 30s for code generation to finish
+    waitForExpectations(timeout: 30.0, handler: { error in
       if let error = error {
         XCTFail("Code generation timed out: \(error)")
       }

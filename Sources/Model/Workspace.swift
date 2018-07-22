@@ -57,7 +57,7 @@ public protocol WorkspaceListener: class {
 Data structure that contains `Block` instances.
 */
 @objc(BKYWorkspace)
-open class Workspace : NSObject {
+@objcMembers open class Workspace : NSObject {
   // MARK: - Properties
 
   /// A unique identifier used to identify this workspace for its lifetime
@@ -324,6 +324,7 @@ open class Workspace : NSObject {
 
       for block in blocks {
         block.disabled = deactivated
+        block.editable = !deactivated && !readOnly
         block.movable = !deactivated
       }
     }

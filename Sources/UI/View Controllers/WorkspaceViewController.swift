@@ -52,13 +52,14 @@ public protocol WorkspaceViewControllerDelegate {
    Called when the `WorkspaceViewController` is about to present a view controller.
 
    - parameter workspaceViewController: The `WorkspaceViewController` presenting a view controller.
-   - parameter willPresentViewController: The `UIViewController` about to be presented.
+   - parameter viewController: The `UIViewController` about to be presented.
    */
   func workspaceViewController(
-    _ workspaceViewController: WorkspaceViewController, willPresentViewController: UIViewController)
+    _ workspaceViewController: WorkspaceViewController,
+    willPresentViewController viewController: UIViewController)
 
   /**
-   Called when the `WorkspaceViewController` was dismissed.
+   Called when the `WorkspaceViewController` has dismissed a presented view controller.
 
    - parameter workspaceViewController: The `WorkspaceViewController` that dismissed a view
    controller.
@@ -71,7 +72,7 @@ public protocol WorkspaceViewControllerDelegate {
  View controller for managing a workspace.
  */
 @objc(BKYWorkspaceViewController)
-open class WorkspaceViewController: UIViewController {
+@objcMembers open class WorkspaceViewController: UIViewController {
 
   /// The workspace layout coordinator this view controller operates on
   open fileprivate(set) var workspaceLayoutCoordinator: WorkspaceLayoutCoordinator?
@@ -95,6 +96,11 @@ open class WorkspaceViewController: UIViewController {
 
   /// Delegate for events that occur on this view controller
   open weak var delegate: WorkspaceViewControllerDelegate?
+
+  /// Additional presentation delegate that should be notified when a view controller is being
+  /// presented by this instance. This allows both this instance and the source that requested
+  /// the view controller presentation to be notified on presentation events.
+  fileprivate weak var presentationDelegate: UIPopoverPresentationControllerDelegate?
 
   /// The view builder used for managing the view hierarchy
   fileprivate let _viewBuilder: ViewBuilder
@@ -126,6 +132,16 @@ open class WorkspaceViewController: UIViewController {
 
   open override func loadView() {
     view = workspaceView
+  }
+
+  open override func present(
+    _ viewControllerToPresent: UIViewController,
+    animated flag: Bool,
+    completion: (() -> Void)? = nil) {
+
+    delegate?.workspaceViewController(self, willPresentViewController: viewControllerToPresent)
+
+    super.present(viewControllerToPresent, animated: flag, completion: completion)
   }
 
   // MARK: - Public
@@ -175,36 +191,44 @@ extension WorkspaceViewController: ViewBuilderDelegate {
     // TODO(#120): This delegate only exists right now so `WorkbenchViewController` can attach
     // gesture recognizers on the BlockView. Refactor this so the gesture recognizers are managed
     // in this view controller.
-    if let blockView = childView as? BlockView {
-      delegate?.workspaceViewController(self, didRemoveBlockView: blockView)
-    }
+    var removedViews = [childView]
+    while let removedView = removedViews.popLast() {
+      removedViews.append(contentsOf: removedView.subviews)
 
-    if let layoutView = childView as? LayoutView, layoutView.popoverDelegate === self {
-      // Unassign this view controller as the layout view's delegate
-      layoutView.popoverDelegate = nil
+      if let blockView = removedView as? BlockView {
+        delegate?.workspaceViewController(self, didRemoveBlockView: blockView)
+      }
+
+      if let layoutView = removedView as? LayoutView, layoutView.popoverDelegate === self {
+        // Unassign this view controller as the layout view's delegate
+        layoutView.popoverDelegate = nil
+      }
     }
   }
 }
 
-// MARK: - FieldViewDelegate implementation
+// MARK: - LayoutPopoverDelegate implementation
 
 extension WorkspaceViewController: LayoutPopoverDelegate {
   public func layoutView(
     _ layoutView: LayoutView,
-    requestedToPresentPopoverViewController viewController: UIViewController, fromView: UIView)
+    requestedToPresentPopoverViewController viewController: UIViewController,
+    fromView: UIView,
+    presentationDelegate: UIPopoverPresentationControllerDelegate?)
     -> Bool
   {
-    guard !workspaceView.scrollView.isDragging && !workspaceView.scrollView.isDecelerating &&
+    guard !workspaceView.scrollView.isInMotion &&
       !(self.presentedViewController?.isBeingPresented ?? false) else
     {
-      // Don't present anything if the scroll view is being dragged or is decelerating, or if
-      // another view controller is being presented
+      // Don't present anything if the scroll view is in motion or if another view controller is
+      // being presented
       return false
     }
 
-    if self.presentedViewController != nil {
+    if let presentedViewController = self.presentedViewController,
+      !presentedViewController.isBeingDismissed {
       // Dismiss any other view controller that's being presented
-      dismiss(animated: true, completion: nil)
+      presentedViewController.dismiss(animated: true, completion: nil)
     }
 
     viewController.modalPresentationStyle = .popover
@@ -213,7 +237,7 @@ extension WorkspaceViewController: LayoutPopoverDelegate {
       self.view.convert(fromView.frame, from: fromView.superview)
     viewController.popoverPresentationController?.delegate = self
 
-    delegate?.workspaceViewController(self, willPresentViewController: viewController)
+    self.presentationDelegate = presentationDelegate
 
     present(viewController, animated: true, completion: nil)
 
@@ -223,7 +247,7 @@ extension WorkspaceViewController: LayoutPopoverDelegate {
   public func layoutView(
     _ layoutView: LayoutView, requestedToPresentViewController viewController: UIViewController)
   {
-    delegate?.workspaceViewController(self, willPresentViewController: viewController)
+    self.presentationDelegate = nil
 
     present(viewController, animated: true, completion: nil)
   }
@@ -232,33 +256,91 @@ extension WorkspaceViewController: LayoutPopoverDelegate {
     _ layoutView: LayoutView,
     requestedToDismissPopoverViewController viewController: UIViewController,
     animated: Bool) {
-    viewController.presentingViewController?.dismiss(animated: animated, completion: nil)
+    if !viewController.isBeingDismissed {
+      viewController.dismiss(animated: animated, completion: nil)
+    }
+
+    presentationDelegate = nil
 
     // Manually fire our custom delegate since it doesn't automatically get triggered from
     // `self.popoverPresentationControllerDidDismissPopover(:)`.
-    self.delegate?.workspaceViewControllerDismissedViewController(self)
+    delegate?.workspaceViewControllerDismissedViewController(self)
   }
 }
 
-// MARK: - UIPopoverPresentationControllerDelegate implementation
+// MARK: - UIPopoverPresentationControllerDelegate Implementation
 
 extension WorkspaceViewController: UIPopoverPresentationControllerDelegate {
+  @available(iOS 8.3, *)
   public func adaptivePresentationStyle(for controller: UIPresentationController,
     traitCollection: UITraitCollection) -> UIModalPresentationStyle
   {
     // Force this view controller to always show up in a popover
-    return UIModalPresentationStyle.none
+    return
+      presentationDelegate?.adaptivePresentationStyle?(
+        for:controller, traitCollection:traitCollection)
+      ?? UIModalPresentationStyle.none
+  }
+
+  public func adaptivePresentationStyle(for controller: UIPresentationController)
+    -> UIModalPresentationStyle {
+    return presentationDelegate?.adaptivePresentationStyle?(for: controller)
+      ?? UIModalPresentationStyle.none
+  }
+
+  public func presentationController(
+    _ controller: UIPresentationController,
+    viewControllerForAdaptivePresentationStyle style: UIModalPresentationStyle)
+    -> UIViewController? {
+      return presentationDelegate?
+        .presentationController?(controller, viewControllerForAdaptivePresentationStyle: style)
+  }
+
+  @available(iOS 8.3, *)
+  public func presentationController(
+    _ presentationController: UIPresentationController,
+    willPresentWithAdaptiveStyle style: UIModalPresentationStyle,
+    transitionCoordinator: UIViewControllerTransitionCoordinator?) {
+    presentationDelegate?.presentationController?(presentationController,
+                                                  willPresentWithAdaptiveStyle: style,
+                                                  transitionCoordinator: transitionCoordinator)
+  }
+
+  public func prepareForPopoverPresentation(_ popoverPresentationController:
+    UIPopoverPresentationController) {
+    presentationDelegate?.prepareForPopoverPresentation?(popoverPresentationController)
+  }
+
+  public func popoverPresentationControllerShouldDismissPopover(
+    _ popoverPresentationController: UIPopoverPresentationController) -> Bool {
+    return
+      presentationDelegate?
+        .popoverPresentationControllerShouldDismissPopover?(popoverPresentationController)
+      ?? true
   }
 
   public func popoverPresentationControllerDidDismissPopover(
     _ popoverPresentationController: UIPopoverPresentationController)
   {
+    presentationDelegate?
+      .popoverPresentationControllerDidDismissPopover?(popoverPresentationController)
+
+    presentationDelegate = nil
     delegate?.workspaceViewControllerDismissedViewController(self)
+  }
+
+  public func popoverPresentationController(
+    _ popoverPresentationController: UIPopoverPresentationController,
+    willRepositionPopoverTo rect: UnsafeMutablePointer<CGRect>,
+    in view: AutoreleasingUnsafeMutablePointer<UIView>) {
+    presentationDelegate?.popoverPresentationController?(
+      popoverPresentationController, willRepositionPopoverTo: rect, in: view)
   }
 
   open override func dismiss(animated flag: Bool, completion: (() -> Void)?) {
     super.dismiss(animated: flag, completion: completion)
 
+    presentationDelegate = nil
     delegate?.workspaceViewControllerDismissedViewController(self)
   }
 }

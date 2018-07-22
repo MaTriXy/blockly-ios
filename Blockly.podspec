@@ -9,7 +9,7 @@
 Pod::Spec.new do |s|
   s.name             = 'Blockly'
   s.module_name      = 'Blockly'
-  s.version          = '1.0.0'
+  s.version          = '1.2.2'
   s.summary          = 'A library from Google for building visual programming editors.'
   s.description      = <<-DESC
   Blockly is a visual editor that allows users to write programs by plugging blocks together.
@@ -24,6 +24,7 @@ Pod::Spec.new do |s|
                          :git => 'https://github.com/google/blockly-ios.git',
                          :tag => s.version.to_s
                        }
+  s.screenshots      = ['https://google.github.io/blockly-ios/demo.gif']
 
   s.platform         = :ios, '10.0'
   s.ios.deployment_target = '8.0'
@@ -55,8 +56,8 @@ Pod::Spec.new do |s|
       'SWIFT_OPTIMIZATION_LEVEL' => '-Owholemodule',
       'SWIFT_OPTIMIZATION_LEVEL[config=Debug]' => '-Onone',
 
-      # Let Xcode know Blockly uses Swift 3.1 syntax
-      'SWIFT_VERSION' => '3.1',
+      # Let Xcode know Blockly uses Swift 4.0 syntax
+      'SWIFT_VERSION' => '4.0',
 
       # Add DEBUG compiler flag for debug builds
       'OTHER_SWIFT_FLAGS[config=Debug]' => '-D DEBUG',

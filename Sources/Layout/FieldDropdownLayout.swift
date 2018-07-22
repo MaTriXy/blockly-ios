@@ -19,7 +19,7 @@ import Foundation
  Class for a `FieldDropdown`-based `Layout`.
  */
 @objc(BKYFieldDropdownLayout)
-open class FieldDropdownLayout: FieldLayout {
+@objcMembers open class FieldDropdownLayout: FieldLayout {
 
   // MARK: - Properties
 
@@ -57,13 +57,6 @@ open class FieldDropdownLayout: FieldLayout {
     super.init(field: fieldDropdown, engine: engine, measurer: measurer)
   }
 
-  // MARK: - Super
-
-  open override func didUpdateField(_ field: Field) {
-    // Perform a layout up the tree
-    updateLayoutUpTree()
-  }
-
   // MARK: - Public
 
   /**
@@ -73,9 +66,13 @@ open class FieldDropdownLayout: FieldLayout {
    - parameter selectedIndex: The value used to update `self.fieldDropdown.selectedIndex`.
    */
   open func updateSelectedIndex(_ selectedIndex: Int) {
+    guard fieldDropdown.selectedIndex != selectedIndex else { return }
+
     captureChangeEvent {
-      // Setting to a new index automatically fires a listener to update the layout
       fieldDropdown.selectedIndex = selectedIndex
     }
+
+    // Perform a layout up the tree
+    updateLayoutUpTree()
   }
 }

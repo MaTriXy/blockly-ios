@@ -77,7 +77,23 @@ extension Block {
       let x = formatter.number(from: xString),
       let y = formatter.number(from: yString)
     {
-      block.position = WorkspacePoint(x: CGFloat(x), y: CGFloat(y))
+      block.position = WorkspacePoint(x: CGFloat(truncating: x), y: CGFloat(truncating: y))
+    }
+
+    if let disabled = xml.attributes[XMLConstants.TAG_DISABLED] {
+      block.disabled = disabled.caseInsensitiveCompare("true") == .orderedSame
+    }
+    if let deletable = xml.attributes[XMLConstants.TAG_DELETABLE] {
+      block.deletable = deletable.caseInsensitiveCompare("true") == .orderedSame
+    }
+    if let movable = xml.attributes[XMLConstants.TAG_MOVABLE] {
+      block.movable = movable.caseInsensitiveCompare("true") == .orderedSame
+    }
+    if let editable = xml.attributes[XMLConstants.TAG_EDITABLE] {
+      block.editable = editable.caseInsensitiveCompare("true") == .orderedSame
+    }
+    if let inputsInline = xml.attributes[XMLConstants.TAG_INPUTS_INLINE] {
+      block.inputsInline = inputsInline.caseInsensitiveCompare("true") == .orderedSame
     }
 
     if let mutator = block.mutator {
@@ -271,6 +287,21 @@ extension Block {
     if topLevel {
       blockXML.attributes[XMLConstants.ATTRIBUTE_POSITION_X] = String(Int(floor(position.x)))
       blockXML.attributes[XMLConstants.ATTRIBUTE_POSITION_Y] = String(Int(floor(position.y)))
+    }
+    if initialInputsInlineValue != inputsInline {
+      blockXML.attributes[XMLConstants.TAG_INPUTS_INLINE] = String(inputsInline)
+    }
+    if disabled {
+      blockXML.attributes[XMLConstants.TAG_DISABLED] = "true"
+    }
+    if !deletable && !shadow {
+       blockXML.attributes[XMLConstants.TAG_DELETABLE] = "false"
+    }
+    if !movable && !shadow {
+      blockXML.attributes[XMLConstants.TAG_MOVABLE] = "false"
+    }
+    if !editable {
+      blockXML.attributes[XMLConstants.TAG_EDITABLE] = "false"
     }
 
     if let mutator = mutator {

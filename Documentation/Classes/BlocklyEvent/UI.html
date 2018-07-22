@@ -14,7 +14,7 @@
             <h1>UI</h1>
               <div class="declaration">
                 <div class="language">
-                  <pre class="highlight"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">UI</span><span class="p">:</span> <span class="kt"><a href="../../Classes/BlocklyEvent.html">BlocklyEvent</a></span></code></pre>
+                  <pre class="highlight"><code><span class="kd">@objcMembers</span> <span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">UI</span><span class="p">:</span> <span class="kt"><a href="../../Classes/BlocklyEvent.html">BlocklyEvent</a></span></code></pre>
 
                 </div>
               </div>
@@ -35,9 +35,9 @@ the toolbox or trash, and changing toolbox categories.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:OCC7Blockly12BlocklyEvent2UI7Element"></a>
-                    <a name="//apple_ref/swift/Enum/Element" class="dashAnchor"></a>
-                    <h3><a class="token" href="#/s:OCC7Blockly12BlocklyEvent2UI7Element">Element</a></h3>
+                    <a name="/s:7Blockly0A5EventC2UIC7Elementa"></a>
+                    <a name="//apple_ref/swift/Alias/Element" class="dashAnchor"></a>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC7Elementa">Element</a></h3>
                     </code>
                   </div>
                   <div class="height-container">
@@ -45,14 +45,203 @@ the toolbox or trash, and changing toolbox categories.</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Possible elements that can be associated with a <code>BlocklyEvent.UI</code>.</p>
+                        <p>Value type used for indicating which element is being associated with the UI event.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="objc">
                           <p class="aside-title-objc">Swift</p>
-                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">Element</span><span class="p">:</span> <span class="kt">Int</span></code></pre>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">typealias</span> <span class="kt">Element</span> <span class="o">=</span> <span class="kt">String</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:7Blockly0A5EventC2UIC15elementCategorySSvZ"></a>
+                    <a name="//apple_ref/swift/Variable/elementCategory" class="dashAnchor"></a>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC15elementCategorySSvZ">elementCategory</a></h3>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Element representing the visibility of a toolbox category.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="objc">
+                          <p class="aside-title-objc">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="k">let</span> <span class="nv">elementCategory</span><span class="p">:</span> <span class="kt"><a href="../../Classes/BlocklyEvent/UI.html#/s:7Blockly0A5EventC2UIC7Elementa">Element</a></span> <span class="o">=</span> <span class="s">"category"</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:7Blockly0A5EventC2UIC12elementClickSSvZ"></a>
+                    <a name="//apple_ref/swift/Variable/elementClick" class="dashAnchor"></a>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC12elementClickSSvZ">elementClick</a></h3>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Element representing if a block was tapped on.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="objc">
+                          <p class="aside-title-objc">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="k">let</span> <span class="nv">elementClick</span><span class="p">:</span> <span class="kt"><a href="../../Classes/BlocklyEvent/UI.html#/s:7Blockly0A5EventC2UIC7Elementa">Element</a></span> <span class="o">=</span> <span class="s">"click"</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:7Blockly0A5EventC2UIC18elementCommentOpenSSvZ"></a>
+                    <a name="//apple_ref/swift/Variable/elementCommentOpen" class="dashAnchor"></a>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC18elementCommentOpenSSvZ">elementCommentOpen</a></h3>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Element representing the visibility of a block comment.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="objc">
+                          <p class="aside-title-objc">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="k">let</span> <span class="nv">elementCommentOpen</span><span class="p">:</span> <span class="kt"><a href="../../Classes/BlocklyEvent/UI.html#/s:7Blockly0A5EventC2UIC7Elementa">Element</a></span> <span class="o">=</span> <span class="s">"commentOpen"</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:7Blockly0A5EventC2UIC18elementMutatorOpenSSvZ"></a>
+                    <a name="//apple_ref/swift/Variable/elementMutatorOpen" class="dashAnchor"></a>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC18elementMutatorOpenSSvZ">elementMutatorOpen</a></h3>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Element representing the visibility of a block mutator popover.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="objc">
+                          <p class="aside-title-objc">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="k">let</span> <span class="nv">elementMutatorOpen</span><span class="p">:</span> <span class="kt"><a href="../../Classes/BlocklyEvent/UI.html#/s:7Blockly0A5EventC2UIC7Elementa">Element</a></span> <span class="o">=</span> <span class="s">"mutatorOpen"</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:7Blockly0A5EventC2UIC15elementSelectedSSvZ"></a>
+                    <a name="//apple_ref/swift/Variable/elementSelected" class="dashAnchor"></a>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC15elementSelectedSSvZ">elementSelected</a></h3>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Element representing the selection state of a block.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="objc">
+                          <p class="aside-title-objc">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="k">let</span> <span class="nv">elementSelected</span><span class="p">:</span> <span class="kt"><a href="../../Classes/BlocklyEvent/UI.html#/s:7Blockly0A5EventC2UIC7Elementa">Element</a></span> <span class="o">=</span> <span class="s">"selected"</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:7Blockly0A5EventC2UIC16elementTrashOpenSSvZ"></a>
+                    <a name="//apple_ref/swift/Variable/elementTrashOpen" class="dashAnchor"></a>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC16elementTrashOpenSSvZ">elementTrashOpen</a></h3>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Element representing the visibility of the trash can folder.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="objc">
+                          <p class="aside-title-objc">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="k">let</span> <span class="nv">elementTrashOpen</span><span class="p">:</span> <span class="kt"><a href="../../Classes/BlocklyEvent/UI.html#/s:7Blockly0A5EventC2UIC7Elementa">Element</a></span> <span class="o">=</span> <span class="s">"trashOpen"</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:7Blockly0A5EventC2UIC18elementWarningOpenSSvZ"></a>
+                    <a name="//apple_ref/swift/Variable/elementWarningOpen" class="dashAnchor"></a>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC18elementWarningOpenSSvZ">elementWarningOpen</a></h3>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Element representing the visibility of a block&rsquo;s warning message.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="objc">
+                          <p class="aside-title-objc">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="k">let</span> <span class="nv">elementWarningOpen</span><span class="p">:</span> <span class="kt"><a href="../../Classes/BlocklyEvent/UI.html#/s:7Blockly0A5EventC2UIC7Elementa">Element</a></span> <span class="o">=</span> <span class="s">"warningOpen"</span></code></pre>
 
                         </div>
                       </div>
@@ -72,9 +261,9 @@ the toolbox or trash, and changing toolbox categories.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:ZvCC7Blockly12BlocklyEvent2UI10EVENT_TYPESS"></a>
+                    <a name="/s:7Blockly0A5EventC2UIC10EVENT_TYPESSvZ"></a>
                     <a name="//apple_ref/swift/Variable/EVENT_TYPE" class="dashAnchor"></a>
-                    <h3><a class="token" href="#/s:ZvCC7Blockly12BlocklyEvent2UI10EVENT_TYPESS">EVENT_TYPE</a></h3>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC10EVENT_TYPESSvZ">EVENT_TYPE</a></h3>
                     </code>
                   </div>
                   <div class="height-container">
@@ -99,9 +288,9 @@ the toolbox or trash, and changing toolbox categories.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:vCC7Blockly12BlocklyEvent2UI7elementOS1_7Element"></a>
+                    <a name="/s:7Blockly0A5EventC2UIC7elementSSv"></a>
                     <a name="//apple_ref/swift/Property/element" class="dashAnchor"></a>
-                    <h3><a class="token" href="#/s:vCC7Blockly12BlocklyEvent2UI7elementOS1_7Element">element</a></h3>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC7elementSSv">element</a></h3>
                     </code>
                   </div>
                   <div class="height-container">
@@ -116,7 +305,7 @@ the toolbox or trash, and changing toolbox categories.</p>
                         <h4>Declaration</h4>
                         <div class="objc">
                           <p class="aside-title-objc">Swift</p>
-                          <pre class="highlight"><code><span class="kd">public</span> <span class="k">let</span> <span class="nv">element</span><span class="p">:</span> <span class="kt"><a href="../../Classes/BlocklyEvent/UI.html#/s:OCC7Blockly12BlocklyEvent2UI7Element">Element</a></span></code></pre>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="k">let</span> <span class="nv">element</span><span class="p">:</span> <span class="kt"><a href="../../Classes/BlocklyEvent/UI.html#/s:7Blockly0A5EventC2UIC7Elementa">Element</a></span></code></pre>
 
                         </div>
                       </div>
@@ -126,9 +315,9 @@ the toolbox or trash, and changing toolbox categories.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:vCC7Blockly12BlocklyEvent2UI8oldValueGSqSS_"></a>
+                    <a name="/s:7Blockly0A5EventC2UIC8oldValueSSSgv"></a>
                     <a name="//apple_ref/swift/Property/oldValue" class="dashAnchor"></a>
-                    <h3><a class="token" href="#/s:vCC7Blockly12BlocklyEvent2UI8oldValueGSqSS_">oldValue</a></h3>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC8oldValueSSSgv">oldValue</a></h3>
                     </code>
                   </div>
                   <div class="height-container">
@@ -153,9 +342,9 @@ the toolbox or trash, and changing toolbox categories.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:vCC7Blockly12BlocklyEvent2UI8newValueGSqSS_"></a>
+                    <a name="/s:7Blockly0A5EventC2UIC8newValueSSSgv"></a>
                     <a name="//apple_ref/swift/Property/newValue" class="dashAnchor"></a>
-                    <h3><a class="token" href="#/s:vCC7Blockly12BlocklyEvent2UI8newValueGSqSS_">newValue</a></h3>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC8newValueSSSgv">newValue</a></h3>
                     </code>
                   </div>
                   <div class="height-container">
@@ -190,9 +379,9 @@ the toolbox or trash, and changing toolbox categories.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:FCC7Blockly12BlocklyEvent2UIcFT7elementOS1_7Element9workspaceCS_9Workspace5blockGSqCS_5Block_8oldValueGSqSS_8newValueGSqSS__S1_"></a>
+                    <a name="/s:7Blockly0A5EventC2UICAESS7element_AA9WorkspaceC9workspaceAA5BlockCSg5blockSSSg8oldValueAN03newJ0tcfc"></a>
                     <a name="//apple_ref/swift/Method/init(element:workspace:block:oldValue:newValue:)" class="dashAnchor"></a>
-                    <h3><a class="token" href="#/s:FCC7Blockly12BlocklyEvent2UIcFT7elementOS1_7Element9workspaceCS_9Workspace5blockGSqCS_5Block_8oldValueGSqSS_8newValueGSqSS__S1_">init(element:workspace:block:oldValue:newValue:)</a></h3>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UICAESS7element_AA9WorkspaceC9workspaceAA5BlockCSg5blockSSSg8oldValueAN03newJ0tcfc">init(element:workspace:block:oldValue:newValue:)</a></h3>
                     </code>
                   </div>
                   <div class="height-container">
@@ -209,74 +398,10 @@ opened, or warning opened.</p>
                         <div class="objc">
                           <p class="aside-title-objc">Swift</p>
                           <pre class="highlight"><code><span class="kd">public</span> <span class="nf">init</span><span class="p">(</span>
-      <span class="nv">element</span><span class="p">:</span> <span class="kt"><a href="../../Classes/BlocklyEvent/UI.html#/s:OCC7Blockly12BlocklyEvent2UI7Element">Element</a></span><span class="p">,</span> <span class="nv">workspace</span><span class="p">:</span> <span class="kt"><a href="../../Classes/Workspace.html">Workspace</a></span><span class="p">,</span> <span class="nv">block</span><span class="p">:</span> <span class="kt"><a href="../../Classes/Block.html">Block</a></span><span class="p">?,</span> <span class="nv">oldValue</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
+      <span class="nv">element</span><span class="p">:</span> <span class="kt"><a href="../../Classes/BlocklyEvent/UI.html#/s:7Blockly0A5EventC2UIC7Elementa">Element</a></span><span class="p">,</span> <span class="nv">workspace</span><span class="p">:</span> <span class="kt"><a href="../../Classes/Workspace.html">Workspace</a></span><span class="p">,</span> <span class="nv">block</span><span class="p">:</span> <span class="kt"><a href="../../Classes/Block.html">Block</a></span><span class="p">?,</span> <span class="nv">oldValue</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span>
       <span class="nv">newValue</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span></code></pre>
 
                         </div>
-                      </div>
-                      <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>element</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The UI element that changed.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>workspace</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The workspace containing the changed element.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>block</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The related block. <code>nil</code> for toolbox category events.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>oldValue</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>[Optional] The value before the event. Booleans are mapped to <code>true</code> and
-<code>false</code>. Defaults to <code>nil</code>.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>newValue</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>[Optional] The value after the event. Booleans are mapped to <code>true</code> and
-<code>false</code>. Defaults to <code>nil</code>.</p>
-                                </div>
-                              </td>
-                            </tr>                          </tbody>
-                        </table>
                       </div>
                     </section>
                   </div>
@@ -284,9 +409,9 @@ opened, or warning opened.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:FCC7Blockly12BlocklyEvent2UIcFzT4jsonGVs10DictionarySSP___S1_"></a>
+                    <a name="/s:7Blockly0A5EventC2UICAEs10DictionaryVySSypG4json_tKcfc"></a>
                     <a name="//apple_ref/swift/Method/init(json:)" class="dashAnchor"></a>
-                    <h3><a class="token" href="#/s:FCC7Blockly12BlocklyEvent2UIcFzT4jsonGVs10DictionarySSP___S1_">init(json:)</a></h3>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UICAEs10DictionaryVySSypG4json_tKcfc">init(json:)</a></h3>
                     </code>
                   </div>
                   <div class="height-container">
@@ -310,33 +435,61 @@ opened, or warning opened.</p>
 
                         </div>
                       </div>
-                      <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>json</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The serialized JSON representation of <code>BlocklyEvent.UI</code>.</p>
-                                </div>
-                              </td>
-                            </tr>                          </tbody>
-                        </table>
+                    </section>
+                  </div>
+                </li>
+              </ul>
+            </div>            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Super"></a>
+                <a name="//apple_ref/swift/Section/Super" class="dashAnchor"></a>
+                <a href="#/Super">
+                  <h2 class="section-name">Super</h2>
+                </a>
+              </div>
+              <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:7Blockly0A5EventC2UIC6toJSONs10DictionaryVySSypGyKF"></a>
+                    <a name="//apple_ref/swift/Method/toJSON()" class="dashAnchor"></a>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC6toJSONs10DictionaryVySSypGyKF">toJSON()</a></h3>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="objc">
+                          <p class="aside-title-objc">Swift</p>
+                          <pre class="highlight"><code><span class="kd">public</span> <span class="k">override</span> <span class="kd">func</span> <span class="nf">toJSON</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Any</span><span class="p">]</span></code></pre>
+
+                        </div>
                       </div>
                     </section>
                   </div>
                 </li>
+              </ul>
+            </div>            <div class="task-group">
+              <div class="task-name-container">
+                <a name="/Convenience%20Event%20Creators"></a>
+                <a name="//apple_ref/swift/Section/Convenience Event Creators" class="dashAnchor"></a>
+                <a href="#/Convenience%20Event%20Creators">
+                  <h2 class="section-name">Convenience Event Creators</h2>
+                </a>
+              </div>
+              <ul>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:ZFCC7Blockly12BlocklyEvent2UI17blockClickedEventFT9workspaceCS_9Workspace5blockCS_5Block_S1_"></a>
+                    <a name="/s:7Blockly0A5EventC2UIC012blockClickedB0AeA9WorkspaceC9workspace_AA5BlockC0D0tFZ"></a>
                     <a name="//apple_ref/swift/Method/blockClickedEvent(workspace:block:)" class="dashAnchor"></a>
-                    <h3><a class="token" href="#/s:ZFCC7Blockly12BlocklyEvent2UI17blockClickedEventFT9workspaceCS_9Workspace5blockCS_5Block_S1_">blockClickedEvent(workspace:block:)</a></h3>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC012blockClickedB0AeA9WorkspaceC9workspace_AA5BlockC0D0tFZ">blockClickedEvent(workspace:block:)</a></h3>
                     </code>
                   </div>
                   <div class="height-container">
@@ -356,35 +509,6 @@ opened, or warning opened.</p>
                         </div>
                       </div>
                       <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>workspace</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The workspace containing the block.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>block</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The block that was clicked.</p>
-                                </div>
-                              </td>
-                            </tr>                          </tbody>
-                        </table>
-                      </div>
-                      <div>
                         <h4>Return Value</h4>
                         <p>The new <code>BlocklyEvent.UI</code>.</p>
                       </div>
@@ -394,9 +518,9 @@ opened, or warning opened.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:ZFCC7Blockly12BlocklyEvent2UI18blockSelectedEventFT9workspaceCS_9Workspace5blockCS_5Block14selectedBeforeSb13selectedAfterSb_S1_"></a>
+                    <a name="/s:7Blockly0A5EventC2UIC013blockSelectedB0AeA9WorkspaceC9workspace_AA5BlockC0D0Sb14selectedBeforeSb0I5AftertFZ"></a>
                     <a name="//apple_ref/swift/Method/blockSelectedEvent(workspace:block:selectedBefore:selectedAfter:)" class="dashAnchor"></a>
-                    <h3><a class="token" href="#/s:ZFCC7Blockly12BlocklyEvent2UI18blockSelectedEventFT9workspaceCS_9Workspace5blockCS_5Block14selectedBeforeSb13selectedAfterSb_S1_">blockSelectedEvent(workspace:block:selectedBefore:selectedAfter:)</a></h3>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC013blockSelectedB0AeA9WorkspaceC9workspace_AA5BlockC0D0Sb14selectedBeforeSb0I5AftertFZ">blockSelectedEvent(workspace:block:selectedBefore:selectedAfter:)</a></h3>
                     </code>
                   </div>
                   <div class="height-container">
@@ -419,57 +543,6 @@ workspace.</p>
                         </div>
                       </div>
                       <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>workspace</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The workspace containing the block.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>block</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The block that was selected.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>selectedBefore</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p><code>true</code> if the block was previously selected. <code>false</code> otherwise.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>selectedAfter</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p><code>true</code> if the block is currently selected. <code>false</code> otherwise.</p>
-                                </div>
-                              </td>
-                            </tr>                          </tbody>
-                        </table>
-                      </div>
-                      <div>
                         <h4>Return Value</h4>
                         <p>The new <code>BlocklyEvent.UI</code>.</p>
                       </div>
@@ -479,9 +552,9 @@ workspace.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:ZFCC7Blockly12BlocklyEvent2UI17blockWarningEventFT9workspaceCS_9Workspace5blockCS_5Block12openedBeforeSb11openedAfterSb_S1_"></a>
+                    <a name="/s:7Blockly0A5EventC2UIC012blockWarningB0AeA9WorkspaceC9workspace_AA5BlockC0D0Sb12openedBeforeSb0I5AftertFZ"></a>
                     <a name="//apple_ref/swift/Method/blockWarningEvent(workspace:block:openedBefore:openedAfter:)" class="dashAnchor"></a>
-                    <h3><a class="token" href="#/s:ZFCC7Blockly12BlocklyEvent2UI17blockWarningEventFT9workspaceCS_9Workspace5blockCS_5Block12openedBeforeSb11openedAfterSb_S1_">blockWarningEvent(workspace:block:openedBefore:openedAfter:)</a></h3>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC012blockWarningB0AeA9WorkspaceC9workspace_AA5BlockC0D0Sb12openedBeforeSb0I5AftertFZ">blockWarningEvent(workspace:block:openedBefore:openedAfter:)</a></h3>
                     </code>
                   </div>
                   <div class="height-container">
@@ -503,58 +576,6 @@ inside a given workspace.</p>
                         </div>
                       </div>
                       <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>workspace</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The workspace containing the block.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>block</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The target block.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>openedBefore</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p><code>true</code> if the block&rsquo;s warning was previously visible. <code>false</code>
-otherwise.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>openedAfter</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p><code>true</code> if the block&rsquo;s warning is currently visible. <code>false</code> otherwise.</p>
-                                </div>
-                              </td>
-                            </tr>                          </tbody>
-                        </table>
-                      </div>
-                      <div>
                         <h4>Return Value</h4>
                         <p>The new <code>BlocklyEvent.UI</code>.</p>
                       </div>
@@ -564,9 +585,9 @@ otherwise.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:ZFCC7Blockly12BlocklyEvent2UI12commentEventFT9workspaceCS_9Workspace5blockCS_5Block12openedBeforeSb11openedAfterSb_S1_"></a>
+                    <a name="/s:7Blockly0A5EventC2UIC07commentB0AeA9WorkspaceC9workspace_AA5BlockC5blockSb12openedBeforeSb0I5AftertFZ"></a>
                     <a name="//apple_ref/swift/Method/commentEvent(workspace:block:openedBefore:openedAfter:)" class="dashAnchor"></a>
-                    <h3><a class="token" href="#/s:ZFCC7Blockly12BlocklyEvent2UI12commentEventFT9workspaceCS_9Workspace5blockCS_5Block12openedBeforeSb11openedAfterSb_S1_">commentEvent(workspace:block:openedBefore:openedAfter:)</a></h3>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC07commentB0AeA9WorkspaceC9workspace_AA5BlockC5blockSb12openedBeforeSb0I5AftertFZ">commentEvent(workspace:block:openedBefore:openedAfter:)</a></h3>
                     </code>
                   </div>
                   <div class="height-container">
@@ -588,58 +609,6 @@ a given workspace.</p>
                         </div>
                       </div>
                       <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>workspace</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The workspace containing the block.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>block</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The target block.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>openedBefore</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p><code>true</code> if the block&rsquo;s comment was previously visible. <code>false</code>
-otherwise.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>openedAfter</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p><code>true</code> if the block&rsquo;s comment is currently visible. <code>false</code> otherwise.</p>
-                                </div>
-                              </td>
-                            </tr>                          </tbody>
-                        </table>
-                      </div>
-                      <div>
                         <h4>Return Value</h4>
                         <p>The new <code>BlocklyEvent.UI</code>.</p>
                       </div>
@@ -649,9 +618,9 @@ otherwise.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:ZFCC7Blockly12BlocklyEvent2UI19mutatorPopoverEventFT9workspaceCS_9Workspace5blockCS_5Block12openedBeforeSb11openedAfterSb_S1_"></a>
+                    <a name="/s:7Blockly0A5EventC2UIC014mutatorPopoverB0AeA9WorkspaceC9workspace_AA5BlockC5blockSb12openedBeforeSb0J5AftertFZ"></a>
                     <a name="//apple_ref/swift/Method/mutatorPopoverEvent(workspace:block:openedBefore:openedAfter:)" class="dashAnchor"></a>
-                    <h3><a class="token" href="#/s:ZFCC7Blockly12BlocklyEvent2UI19mutatorPopoverEventFT9workspaceCS_9Workspace5blockCS_5Block12openedBeforeSb11openedAfterSb_S1_">mutatorPopoverEvent(workspace:block:openedBefore:openedAfter:)</a></h3>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC014mutatorPopoverB0AeA9WorkspaceC9workspace_AA5BlockC5blockSb12openedBeforeSb0J5AftertFZ">mutatorPopoverEvent(workspace:block:openedBefore:openedAfter:)</a></h3>
                     </code>
                   </div>
                   <div class="height-container">
@@ -673,59 +642,6 @@ inside a given workspace.</p>
                         </div>
                       </div>
                       <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>workspace</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The workspace containing the block.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>block</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The target block.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>openedBefore</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p><code>true</code> if the block&rsquo;s mutator popover was previously visible. <code>false</code>
-otherwise.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>openedAfter</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p><code>true</code> if the block&rsquo;s mutator popover is currently visible. <code>false</code>
-otherwise.</p>
-                                </div>
-                              </td>
-                            </tr>                          </tbody>
-                        </table>
-                      </div>
-                      <div>
                         <h4>Return Value</h4>
                         <p>The new <code>BlocklyEvent.UI</code>.</p>
                       </div>
@@ -735,9 +651,9 @@ otherwise.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:ZFCC7Blockly12BlocklyEvent2UI20toolboxCategoryEventFT9workspaceCS_9Workspace8oldValueGSqSS_8newValueGSqSS__S1_"></a>
+                    <a name="/s:7Blockly0A5EventC2UIC015toolboxCategoryB0AeA9WorkspaceC9workspace_SSSg8oldValueAJ03newI0tFZ"></a>
                     <a name="//apple_ref/swift/Method/toolboxCategoryEvent(workspace:oldValue:newValue:)" class="dashAnchor"></a>
-                    <h3><a class="token" href="#/s:ZFCC7Blockly12BlocklyEvent2UI20toolboxCategoryEventFT9workspaceCS_9Workspace8oldValueGSqSS_8newValueGSqSS__S1_">toolboxCategoryEvent(workspace:oldValue:newValue:)</a></h3>
+                    <h3><a class="token" href="#/s:7Blockly0A5EventC2UIC015toolboxCategoryB0AeA9WorkspaceC9workspace_SSSg8oldValueAJ03newI0tFZ">toolboxCategoryEvent(workspace:oldValue:newValue:)</a></h3>
                     </code>
                   </div>
                   <div class="height-container">
@@ -758,84 +674,8 @@ otherwise.</p>
                         </div>
                       </div>
                       <div>
-                        <h4>Parameters</h4>
-                        <table class="graybox">
-                          <tbody>
-                            <tr>
-                              <td>
-                                <code>
-                                <em>workspace</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The workspace of the toolbox category.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>oldValue</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The previous category that was open, or <code>nil</code> if no category was open.</p>
-                                </div>
-                              </td>
-                            </tr>                            <tr>
-                              <td>
-                                <code>
-                                <em>newValue</em>
-                                </code>
-                              </td>
-                              <td>
-                                <div>
-                                  <p>The current category that is open, or <code>nil</code> if no category is open.</p>
-                                </div>
-                              </td>
-                            </tr>                          </tbody>
-                        </table>
-                      </div>
-                      <div>
                         <h4>Return Value</h4>
                         <p>The new <code>BlocklyEvent.UI</code>.</p>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-              </ul>
-            </div>            <div class="task-group">
-              <div class="task-name-container">
-                <a name="/Super"></a>
-                <a name="//apple_ref/swift/Section/Super" class="dashAnchor"></a>
-                <a href="#/Super">
-                  <h2 class="section-name">Super</h2>
-                </a>
-              </div>
-              <ul>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:FCC7Blockly12BlocklyEvent2UI6toJSONFzT_GVs10DictionarySSP__"></a>
-                    <a name="//apple_ref/swift/Method/toJSON()" class="dashAnchor"></a>
-                    <h3><a class="token" href="#/s:FCC7Blockly12BlocklyEvent2UI6toJSONFzT_GVs10DictionarySSP__">toJSON()</a></h3>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="objc">
-                          <p class="aside-title-objc">Swift</p>
-                          <pre class="highlight"><code><span class="kd">public</span> <span class="k">override</span> <span class="kd">func</span> <span class="nf">toJSON</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Any</span><span class="p">]</span></code></pre>
-
-                        </div>
                       </div>
                     </section>
                   </div>
@@ -853,12 +693,22 @@ toc:
 - title: iOS
   path: /blockly/reference/ios/../../iOS
   section:
+    - title: AnglePicker
+      path: /blockly/reference/ios/../../Classes/AnglePicker.html
+    - title: – Options
+      path: /blockly/reference/ios/../../Classes/AnglePicker/Options.html
+    - title: AnglePickerViewController
+      path: /blockly/reference/ios/../../Classes/AnglePickerViewController.html
+    - title: AnglePickerViewControllerDelegate
+      path: /blockly/reference/ios/../../Protocols/AnglePickerViewControllerDelegate.html
     - title: Array
       path: /blockly/reference/ios/../../Extensions/Array.html
     - title: BezierPathLayer
       path: /blockly/reference/ios/../../Classes/BezierPathLayer.html
     - title: Block
       path: /blockly/reference/ios/../../Classes/Block.html
+    - title: – Style
+      path: /blockly/reference/ios/../../Classes/Block/Style.html
     - title: BlockBuilder
       path: /blockly/reference/ios/../../Classes/BlockBuilder.html
     - title: BlockBumper
@@ -896,31 +746,33 @@ toc:
     - title: BlocklyError
       path: /blockly/reference/ios/../../Classes/BlocklyError.html
     - title: – Code
-      path: /blockly/reference/ios/../../Classes/BlocklyError.html#/s:OC7Blockly12BlocklyError4Code
+      path: /blockly/reference/ios/../../Classes/BlocklyError.html#/s:7Blockly0A5ErrorC4CodeO
     - title: BlocklyPanGestureRecognizer
       path: /blockly/reference/ios/../../Classes/BlocklyPanGestureRecognizer.html
     - title: – TouchState
-      path: /blockly/reference/ios/../../Classes/BlocklyPanGestureRecognizer.html#/s:OC7Blockly27BlocklyPanGestureRecognizer10TouchState
+      path: /blockly/reference/ios/../../Classes/BlocklyPanGestureRecognizer.html#/s:7Blockly0A20PanGestureRecognizerC10TouchStateO
     - title: BlocklyPanGestureRecognizerDelegate
       path: /blockly/reference/ios/../../Protocols/BlocklyPanGestureRecognizerDelegate.html
     - title: BlockView
       path: /blockly/reference/ios/../../Classes/BlockView.html
     - title: BundledFile
-      path: /blockly/reference/ios/../../iOS.html#/s:7Blockly11BundledFile
+      path: /blockly/reference/ios/../../iOS.html#/s:7Blockly11BundledFilea
     - title: CodeGenerator
       path: /blockly/reference/ios/../../Classes/CodeGenerator.html
     - title: – State
-      path: /blockly/reference/ios/../../Classes/CodeGenerator.html#/s:OC7Blockly13CodeGenerator5State
+      path: /blockly/reference/ios/../../Classes/CodeGenerator.html#/s:7Blockly13CodeGeneratorC5StateO
     - title: CodeGeneratorService
       path: /blockly/reference/ios/../../Classes/CodeGeneratorService.html
     - title: CodeGeneratorServiceRequestBuilder
       path: /blockly/reference/ios/../../Classes/CodeGeneratorServiceRequestBuilder.html
     - title: ColorHelper
       path: /blockly/reference/ios/../../Classes/ColorHelper.html
+    - title: ColorPalette
+      path: /blockly/reference/ios/../../Classes/ColorPalette.html
     - title: Connection
       path: /blockly/reference/ios/../../Classes/Connection.html
     - title: – ConnectionType
-      path: /blockly/reference/ios/../../Classes/Connection.html#/s:OC7Blockly10Connection14ConnectionType
+      path: /blockly/reference/ios/../../Classes/Connection.html#/s:7Blockly10ConnectionC0B4TypeO
     - title: – CheckResult
       path: /blockly/reference/ios/../../Classes/Connection/CheckResult.html
     - title: ConnectionManager
@@ -951,8 +803,6 @@ toc:
       path: /blockly/reference/ios/../../Classes/DefaultLayoutConfig.html
     - title: DefaultLayoutEngine
       path: /blockly/reference/ios/../../Classes/DefaultLayoutEngine.html
-    - title: DefaultLayoutFactory
-      path: /blockly/reference/ios/../../Classes/DefaultLayoutFactory.html
     - title: Dictionary
       path: /blockly/reference/ios/../../Extensions/Dictionary.html
     - title: Dragger
@@ -1076,7 +926,7 @@ toc:
     - title: LayoutEngine
       path: /blockly/reference/ios/../../Classes/LayoutEngine.html
     - title: LayoutFactory
-      path: /blockly/reference/ios/../../Protocols/LayoutFactory.html
+      path: /blockly/reference/ios/../../Classes/LayoutFactory.html
     - title: LayoutFlag
       path: /blockly/reference/ios/../../Structs/LayoutFlag.html
     - title: LayoutHierarchyListener
@@ -1115,6 +965,8 @@ toc:
       path: /blockly/reference/ios/../../Classes/MutatorProcedureIfReturnLayout.html
     - title: PathHelper
       path: /blockly/reference/ios/../../Classes/PathHelper.html
+    - title: – Corner
+      path: /blockly/reference/ios/../../Classes/PathHelper/Corner.html
     - title: ProcedureCoordinator
       path: /blockly/reference/ios/../../Classes/ProcedureCoordinator.html
     - title: ProcedureParameter
@@ -1123,6 +975,16 @@ toc:
       path: /blockly/reference/ios/../../Classes/NameManager.html
     - title: NameManagerListener
       path: /blockly/reference/ios/../../Protocols/NameManagerListener.html
+    - title: NumberPad
+      path: /blockly/reference/ios/../../Classes/NumberPad.html
+    - title: – Options
+      path: /blockly/reference/ios/../../Classes/NumberPad/Options.html
+    - title: NumberPadDelegate
+      path: /blockly/reference/ios/../../Protocols/NumberPadDelegate.html
+    - title: NumberPadTextField
+      path: /blockly/reference/ios/../../iOS.html#/c:@M@Blockly@objc(cs)NumberPadTextField
+    - title: NumberPadViewController
+      path: /blockly/reference/ios/../../Classes/NumberPadViewController.html
     - title: ObjectPool
       path: /blockly/reference/ios/../../Classes/ObjectPool.html
     - title: Recyclable
@@ -1136,7 +998,7 @@ toc:
     - title: ToolboxCategoryListViewController
       path: /blockly/reference/ios/../../Classes/ToolboxCategoryListViewController.html
     - title: – Orientation
-      path: /blockly/reference/ios/../../Classes/ToolboxCategoryListViewController.html#/s:OC7Blockly33ToolboxCategoryListViewController11Orientation
+      path: /blockly/reference/ios/../../Classes/ToolboxCategoryListViewController.html#/s:7Blockly33ToolboxCategoryListViewControllerC11OrientationO
     - title: ToolboxCategoryListViewControllerDelegate
       path: /blockly/reference/ios/../../Protocols/ToolboxCategoryListViewControllerDelegate.html
     - title: ToolboxCategoryViewController
@@ -1160,7 +1022,7 @@ toc:
     - title: WorkbenchViewController
       path: /blockly/reference/ios/../../Classes/WorkbenchViewController.html
     - title: – Style
-      path: /blockly/reference/ios/../../Classes/WorkbenchViewController.html#/s:OC7Blockly23WorkbenchViewController5Style
+      path: /blockly/reference/ios/../../Classes/WorkbenchViewController.html#/s:7Blockly23WorkbenchViewControllerC5StyleO
     - title: WorkbenchViewControllerDelegate
       path: /blockly/reference/ios/../../Protocols/WorkbenchViewControllerDelegate.html
     - title: Workspace
@@ -1168,7 +1030,7 @@ toc:
     - title: WorkspaceBezierPath
       path: /blockly/reference/ios/../../Classes/WorkspaceBezierPath.html
     - title: WorkspaceEdgeInsets
-      path: /blockly/reference/ios/../../iOS.html#/s:7Blockly19WorkspaceEdgeInsets
+      path: /blockly/reference/ios/../../iOS.html#/s:7Blockly19WorkspaceEdgeInsetsa
     - title: WorkspaceFlow
       path: /blockly/reference/ios/../../Classes/WorkspaceFlow.html
     - title: – Item
@@ -1176,7 +1038,7 @@ toc:
     - title: WorkspaceFlowLayout
       path: /blockly/reference/ios/../../Classes/WorkspaceFlowLayout.html
     - title: – LayoutDirection
-      path: /blockly/reference/ios/../../Classes/WorkspaceFlowLayout.html#/s:OC7Blockly19WorkspaceFlowLayout15LayoutDirection
+      path: /blockly/reference/ios/../../Classes/WorkspaceFlowLayout.html#/s:7Blockly19WorkspaceFlowLayoutC0D9DirectionO
     - title: WorkspaceLayout
       path: /blockly/reference/ios/../../Classes/WorkspaceLayout.html
     - title: WorkspaceLayoutCoordinator
@@ -1189,14 +1051,14 @@ toc:
       path: /blockly/reference/ios/../../Extensions/WorkspaceSize.html
     - title: WorkspaceView
       path: /blockly/reference/ios/../../Classes/WorkspaceView.html
+    - title: – Location
+      path: /blockly/reference/ios/../../Classes/WorkspaceView/Location.html
     - title: – ScrollView
       path: /blockly/reference/ios/../../Classes/WorkspaceView/ScrollView.html
     - title: WorkspaceViewController
       path: /blockly/reference/ios/../../Classes/WorkspaceViewController.html
     - title: WorkspaceViewControllerDelegate
       path: /blockly/reference/ios/../../Protocols/WorkspaceViewControllerDelegate.html
-    - title: WorkbenchViewControllerUIState
-      path: /blockly/reference/ios/../../Extensions/WorkbenchViewControllerUIState.html
     - title: ZIndexedGroupView
       path: /blockly/reference/ios/../../Classes/ZIndexedGroupView.html
     - title: ZIndexedView

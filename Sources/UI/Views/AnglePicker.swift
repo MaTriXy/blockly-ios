@@ -20,20 +20,20 @@ import QuartzCore
  UI Control that is used for picking an angle from a clock-like dial.
  */
 @objc(BKYAnglePicker)
-public class AnglePicker: UIControl {
+@objcMembers public class AnglePicker: UIControl {
 
   /**
    Options for configuring the behavior of the angle picker.
    */
   public struct Options {
     /// The color of the ticks.
-    public var tickColor = ColorHelper.makeColor(rgb: "81C784")
+    public var tickColor: UIColor = ColorPalette.green.tint300
 
     /// The fill color of the angle.
-    public var angleColor = ColorHelper.makeColor(rgb: "43A047")
+    public var angleColor: UIColor = ColorPalette.green.tint600
 
     /// The fill color of the background circle.
-    public var circleColor = ColorHelper.makeColor(rgb: "f5f5f5")
+    public var circleColor: UIColor = ColorPalette.grey.tint100
 
     /// The total number of ticks to render. These ticks act as snappable hotspots, whose
     /// behavior can be configured via `self.snapToThreshold` and `self.snapAwayThreshold`.
@@ -88,8 +88,8 @@ public class AnglePicker: UIControl {
   fileprivate lazy var _angleLayer: CAShapeLayer = {
     let layer = CAShapeLayer()
     layer.allowsEdgeAntialiasing = true
-    layer.fillColor = self.options.angleColor?.cgColor
-    layer.strokeColor = self.options.angleColor?.cgColor
+    layer.fillColor = self.options.angleColor.cgColor
+    layer.strokeColor = self.options.angleColor.cgColor
     layer.lineWidth = 1
     return layer
   }()
@@ -97,24 +97,22 @@ public class AnglePicker: UIControl {
   /// Layer for rendering the background circle.
   fileprivate lazy var _backgroundCircleLayer: CAShapeLayer = {
     let layer = CAShapeLayer()
-    layer.shouldRasterize = true
+    layer.allowsEdgeAntialiasing = true
     layer.drawsAsynchronously = true
-    layer.fillColor = self.options.circleColor?.cgColor
+    layer.fillColor = self.options.circleColor.cgColor
     layer.strokeColor = nil
     layer.lineWidth = 0
-    layer.allowsEdgeAntialiasing = true
     return layer
   }()
 
   /// Layer for rendering the ticks.
   fileprivate lazy var _tickLayer: CAShapeLayer = {
     let layer = CAShapeLayer()
-    layer.strokeColor = self.options.tickColor?.cgColor
-    layer.fillColor = self.options.tickColor?.cgColor
-    layer.shouldRasterize = true
-    layer.drawsAsynchronously = true
-    layer.lineWidth = 2
     layer.allowsEdgeAntialiasing = true
+    layer.drawsAsynchronously = true
+    layer.strokeColor = self.options.tickColor.cgColor
+    layer.fillColor = self.options.tickColor.cgColor
+    layer.lineWidth = 2
     return layer
   }()
 
@@ -251,7 +249,12 @@ public class AnglePicker: UIControl {
 
     // Set the path
     _angleLayer.path = anglePath.cgPath
+
+    // Make the line width thicker if it's a 0° angle.
+    _angleLayer.lineWidth = startAngle == endAngle ? 2 : 1
+
     _angleLayer.setNeedsDisplay()
+
     setNeedsDisplay()
   }
 

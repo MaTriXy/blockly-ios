@@ -41,7 +41,7 @@ import Foundation
  This class is designed as a singleton instance, accessible via `MessageManager.shared`.
  */
 @objc(BKYMessageManager)
-public class MessageManager: NSObject {
+@objcMembers public class MessageManager: NSObject {
   // MARK: - Properties
 
   /// Shared instance.
@@ -57,6 +57,18 @@ public class MessageManager: NSObject {
     } catch let error {
       bky_debugPrint("Could not load default files for MessageManager: \(error)")
     }
+
+    // Change defaults to use material design colours 
+    manager.loadMessages([
+      "BKY_COLOUR_HUE": "#8D6E63", // Brown 400
+      "BKY_LISTS_HUE": "#7E57C2", // Deep Purple 400
+      "BKY_LOGIC_HUE": "#2196F3", // Blue 500
+      "BKY_LOOPS_HUE": "#43A047", // Green 600
+      "BKY_MATH_HUE": "#5C6BC0", // Indigo 400
+      "BKY_PROCEDURES_HUE": "#AB47BC", // Purple 400
+      "BKY_TEXTS_HUE": "#009688", // Teal 500
+      "BKY_VARIABLES_HUE": "#EC407A", // Pink 400
+      ])
 
     return manager
   }()
@@ -294,14 +306,14 @@ public class MessageManager: NSObject {
     for match in matches.reversed() {
       guard
         match.numberOfRanges == 2,
-        match.rangeAt(1).location != NSNotFound, // The first capture group is what contains the key
+        match.range(at: 1).location != NSNotFound, // The first capture group is what contains the key
         let matchRange = bky_rangeFromNSRange(match.range, forString: returnValue),
-        let keyRange = bky_rangeFromNSRange(match.rangeAt(1), forString: returnValue) else {
+        let keyRange = bky_rangeFromNSRange(match.range(at: 1), forString: returnValue) else {
           continue
       }
 
       // Found a key, try to find a message for it.
-      let key = returnValue.substring(with: keyRange)
+      let key = String(returnValue[keyRange])
 
       if let message = self.message(forKey: key) {
         // A message was found for the key. The message itself may contain more key references,
@@ -312,6 +324,18 @@ public class MessageManager: NSObject {
     }
 
     return returnValue
+  }
+
+  // MARK: - Resetting State
+
+  /**
+   Removes all messages and synonyms from the manager.
+
+   - note: This should only be used for testing purposes.
+   */
+  internal func _clear() {
+    _messages.removeAll()
+    _synonyms.removeAll()
   }
 }
 

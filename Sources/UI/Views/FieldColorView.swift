@@ -19,7 +19,7 @@ import Foundation
  View for rendering a `FieldColorLayout`.
  */
 @objc(BKYFieldColorView)
-open class FieldColorView: FieldView {
+@objcMembers open class FieldColorView: FieldView {
   // MARK: - Properties
 
   /// Convenience property for accessing `self.layout` as a `FieldColorLayout`
@@ -32,7 +32,6 @@ open class FieldColorView: FieldView {
     let button = UIButton(type: .custom)
     button.frame = self.bounds
     button.clipsToBounds = true
-    button.layer.borderColor = UIColor.white.cgColor
     button.autoresizingMask = [.flexibleHeight, .flexibleWidth]
     button.addTarget(self, action: #selector(didTapButton(_:)), for: .touchUpInside)
     return button
@@ -74,6 +73,8 @@ open class FieldColorView: FieldView {
         button.layer.cornerRadius =
           fieldColorLayout.config.viewUnit(for: LayoutConfig.FieldCornerRadius)
         button.backgroundColor = fieldColorLayout.color
+        button.layer.borderColor =
+          fieldColorLayout.config.color(for: LayoutConfig.FieldColorButtonBorderColor)?.cgColor
       }
     }
   }
@@ -86,13 +87,15 @@ open class FieldColorView: FieldView {
 
   // MARK: - Private
 
-  fileprivate dynamic func didTapButton(_ sender: UIButton) {
+  @objc fileprivate dynamic func didTapButton(_ sender: UIButton) {
     // Show the color picker
     let viewController = FieldColorPickerViewController()
     viewController.color = fieldColorLayout?.color
     viewController.delegate = self
-    popoverDelegate?
-      .layoutView(self, requestedToPresentPopoverViewController: viewController, fromView: self)
+    popoverDelegate?.layoutView(self,
+                                requestedToPresentPopoverViewController: viewController,
+                                fromView: self,
+                                presentationDelegate: nil)
   }
 }
 
@@ -106,7 +109,9 @@ extension FieldColorView: FieldLayoutMeasurer {
       return CGSize.zero
     }
 
-    return layout.config.viewSize(for: LayoutConfig.FieldColorButtonSize)
+    var size = layout.config.viewSize(for: LayoutConfig.FieldColorButtonSize)
+    size.height = max(size.height, layout.config.viewUnit(for: LayoutConfig.FieldMinimumHeight))
+    return size
   }
 }
 

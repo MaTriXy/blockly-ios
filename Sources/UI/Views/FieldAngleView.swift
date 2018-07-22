@@ -19,7 +19,7 @@ import Foundation
  View for rendering a `FieldAngleLayout`.
  */
 @objc(BKYFieldAngleView)
-open class FieldAngleView: FieldView {
+@objcMembers open class FieldAngleView: FieldView {
   // MARK: - Properties
 
   /// Convenience property accessing `self.layout` as `FieldAngleLayout`
@@ -34,7 +34,7 @@ open class FieldAngleView: FieldView {
     textField.delegate = self
     textField.borderStyle = .roundedRect
     textField.autoresizingMask = [.flexibleHeight, .flexibleWidth]
-    textField.textAlignment = .right
+    textField.textAlignment = .center
     return textField
   }()
 
@@ -78,7 +78,7 @@ open class FieldAngleView: FieldView {
         textField.textColor =
           fieldAngleLayout.config.color(for: LayoutConfig.FieldEditableTextColor)
         textField.insetPadding =
-          fieldAngleLayout.config.edgeInsets(for: LayoutConfig.FieldTextFieldInsetPadding)
+          fieldAngleLayout.config.viewEdgeInsets(for: LayoutConfig.FieldTextFieldInsetPadding)
       }
     }
   }
@@ -117,8 +117,10 @@ extension FieldAngleView: UITextFieldDelegate {
     // Start a new event group for this edit.
     _eventGroupID = UUID().uuidString
 
-    popoverDelegate?
-      .layoutView(self, requestedToPresentPopoverViewController: viewController, fromView: self)
+    popoverDelegate?.layoutView(self,
+                                requestedToPresentPopoverViewController: viewController,
+                                fromView: self,
+                                presentationDelegate: self)
 
     // Hide keyboard
     endEditing(true)
@@ -137,23 +139,18 @@ extension FieldAngleView: FieldLayoutMeasurer {
       return CGSize.zero
     }
 
-    let textPadding = layout.config.edgeInsets(for: LayoutConfig.FieldTextFieldInsetPadding)
+    let textPadding = layout.config.viewEdgeInsets(for: LayoutConfig.FieldTextFieldInsetPadding)
     let maxWidth = layout.config.viewUnit(for: LayoutConfig.FieldTextFieldMaximumWidth)
-    // Use a minimum size that can at least accomodate 3 digits and °. This is to help ensure that
-    //  the angle picker popover doesn't ever accidentally obstruct the view of the text field
-    // (edge case scenario).
-    let minimumText = "000°"
-    let actualText = fieldAngleLayout.textValue
+    let text = fieldAngleLayout.textValue + " "
     let font = layout.config.font(for: LayoutConfig.GlobalFont)
-    let minimumSize = minimumText.bky_singleLineSize(forFont: font)
-    let actualSize = actualText.bky_singleLineSize(forFont: font)
-
-    var measureSize = CGSize(
-      width: max(minimumSize.width, actualSize.width),
-      height: max(minimumSize.height, actualSize.height))
+    var measureSize = text.bky_singleLineSize(forFont: font)
     measureSize.height += textPadding.top + textPadding.bottom
     measureSize.width =
       min(measureSize.width + textPadding.leading + textPadding.trailing, maxWidth)
+    measureSize.width =
+      max(measureSize.width, layout.config.viewUnit(for: LayoutConfig.FieldTextFieldMinimumWidth))
+    measureSize.height =
+      max(measureSize.height, layout.config.viewUnit(for: LayoutConfig.FieldMinimumHeight))
     return measureSize
   }
 }
@@ -169,5 +166,17 @@ extension FieldAngleView: AnglePickerViewControllerDelegate {
       // Update the text from the layout
       updateTextFieldFromLayout()
     }
+  }
+}
+
+// MARK: - UIPopoverPresentationControllerDelegate
+
+extension FieldAngleView: UIPopoverPresentationControllerDelegate {
+  public func prepareForPopoverPresentation(
+    _ popoverPresentationController: UIPopoverPresentationController) {
+    guard let rtl = self.fieldAngleLayout?.engine.rtl else { return }
+
+    // Prioritize arrow directions, so it won't obstruct the view of the field
+    popoverPresentationController.bky_prioritizeArrowDirections([.up, .down, .right], rtl: rtl)
   }
 }

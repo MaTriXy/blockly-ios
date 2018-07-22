@@ -66,7 +66,7 @@ a UI view can simply access the property `viewFrame` to determine its "UIView co
 position and size.
 */
 @objc(BKYLayout)
-open class Layout: NSObject {
+@objcMembers open class Layout: NSObject {
   // MARK: - Static Properties
 
   /// Flag that should be used when the layout's entire display needs to be updated from the UI side
@@ -218,14 +218,20 @@ open class Layout: NSObject {
    */
   public final func flattenedLayoutTree<T>(ofType type: T.Type? = nil) -> [T] where T: Layout {
     var allLayouts = [T]()
+    var layoutsToProcess = [Layout]()
 
-    if let layout = self as? T {
-      allLayouts.append(layout)
+    layoutsToProcess.append(self)
+
+    while !layoutsToProcess.isEmpty {
+      let layout = layoutsToProcess.removeLast()
+
+      if let typedLayout = layout as? T {
+        allLayouts.append(typedLayout)
+      }
+
+      layoutsToProcess.append(contentsOf: layout.childLayouts)
     }
 
-    for layout in childLayouts {
-      allLayouts.append(contentsOf: layout.flattenedLayoutTree(ofType: type))
-    }
     return allLayouts
   }
 

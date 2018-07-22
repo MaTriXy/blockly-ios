@@ -19,7 +19,7 @@ import Foundation
 An input field for picking a date.
 */
 @objc(BKYFieldDate)
-public final class FieldDate: Field {
+@objcMembers public final class FieldDate: Field {
   /// The date format to use for serialization purposes
   fileprivate static let DATE_FORMAT = "yyyy-MM-dd"
 
@@ -108,7 +108,7 @@ public final class FieldDate: Field {
   Parses a string of the format "yyyy-MM-dd".
   */
   internal class func dateFromString(_ string: String) -> Date? {
-    if (string.characters.count != 10) {
+    if (string.count != 10) {
       return nil
     }
     let dateFormatter = DateFormatter()

@@ -34,7 +34,7 @@ public protocol DropdownOptionsViewControllerDelegate: class {
  View controller for selecting an option from inside a dropdown.
  */
 @objc(BKYDropdownOptionsViewController)
-open class DropdownOptionsViewController: UITableViewController {
+@objcMembers open class DropdownOptionsViewController: UITableViewController {
 
   // MARK: - Tuples
 
@@ -70,7 +70,7 @@ open class DropdownOptionsViewController: UITableViewController {
   /// The color of the font on each cell
   open var textLabelColor: UIColor? = .black
   /// The maximum size to use when displaying this view controller as a popover
-  open var maximumPopoverSize = CGSize(width: 248, height: 248)
+  open var maximumPopoverSize = CGSize(width: 300, height: 300)
   /// Identifier for reusing cells for this table
   fileprivate let cellReuseIdentifier = "DropdownOptionsViewControllerCell"
   /// The estimated width of the checkmark accessory (this value does not appear to be accessible)
@@ -139,16 +139,16 @@ open class DropdownOptionsViewController: UITableViewController {
   // MARK: - Private
 
   fileprivate func calculatePreferredContentSize() {
-    var preferredContentSize = CGSize.zero
+    var contentSize = CGSize.zero
 
     for i in 0 ..< options.count {
       let cellSize = cellSizeForRow(i, constrainedToWidth: maximumPopoverSize.width)
-      preferredContentSize.height =
-        min(preferredContentSize.height + cellSize.height, maximumPopoverSize.height)
-      preferredContentSize.width = max(preferredContentSize.width, cellSize.width)
+      contentSize.height =
+        min(contentSize.height + cellSize.height, maximumPopoverSize.height)
+      contentSize.width = max(contentSize.width, cellSize.width)
     }
 
-    self.preferredContentSize = preferredContentSize
+    preferredContentSize = contentSize
   }
 
   fileprivate func cellSizeForRow(_ row: Int, constrainedToWidth width: CGFloat) -> CGSize {

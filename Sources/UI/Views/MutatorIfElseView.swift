@@ -21,7 +21,7 @@ import Foundation
  View for rendering a `MutatorIfElse`.
  */
 @objc(BKYMutatorIfElseView)
-open class MutatorIfElseView: LayoutView {
+@objcMembers open class MutatorIfElseView: LayoutView {
   // MARK: - Properties
 
   /// Convenience property accessing `self.layout` as `MutatorIfElseLayout`
@@ -31,7 +31,7 @@ open class MutatorIfElseView: LayoutView {
 
   /// A button for opening the popover settings
   open fileprivate(set) lazy var popoverButton: UIButton = {
-    let button = UIButton(type: .custom)
+    let button = UIButton(type: .system)
     button.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     if let image = ImageLoader.loadImage(named: "settings", forClass: MutatorIfElseView.self) {
       button.setImage(image, for: .normal)
@@ -75,10 +75,16 @@ open class MutatorIfElseView: LayoutView {
       if flags.intersectsWith([Layout.Flag_NeedsDisplay, Layout.Flag_UpdateViewFrame]) {
         // Update the view frame
         self.frame = layout.viewFrame
+
+        // Force the mutator view to always be drawn behind sibling views (which could be other
+        // blocks).
+        self.superview?.sendSubview(toBack: self)
       }
 
       let topPadding = layout.engine.viewUnitFromWorkspaceUnit(4)
       self.popoverButton.contentEdgeInsets = UIEdgeInsetsMake(topPadding, 0, topPadding, 0)
+      self.popoverButton.tintColor =
+        layout.config.color(for: DefaultLayoutConfig.MutatorSettingsButtonColor)
 
       self.isUserInteractionEnabled = layout.userInteractionEnabled
     }
@@ -91,25 +97,33 @@ open class MutatorIfElseView: LayoutView {
 
   // MARK: - Private
 
-  private dynamic func openPopover(_ sender: UIButton) {
+  @objc private dynamic func openPopover(_ sender: UIButton) {
     guard let mutatorIfElseLayout = self.mutatorIfElseLayout else {
       return
     }
 
     let viewController =
       MutatorIfElseViewPopoverController(mutatorIfElseLayout: mutatorIfElseLayout)
-    viewController.preferredContentSize = CGSize(width: 220, height: 100)
 
     // Preserve the current input connections so that subsequent mutations don't disconnect them
     mutatorIfElseLayout.preserveCurrentInputConnections()
 
     popoverDelegate?.layoutView(self,
                                 requestedToPresentPopoverViewController: viewController,
-                                fromView: popoverButton)
+                                fromView: popoverButton,
+                                presentationDelegate: self)
+  }
+}
 
-    // Set the arrow direction of the popover to be down/right/left, so it won't
-    // obstruct the view of the block
-    viewController.popoverPresentationController?.permittedArrowDirections = [.down, .right, .left]
+// MARK: - UIPopoverPresentationControllerDelegate
+
+extension MutatorIfElseView: UIPopoverPresentationControllerDelegate {
+  public func prepareForPopoverPresentation(
+    _ popoverPresentationController: UIPopoverPresentationController) {
+    guard let rtl = self.mutatorIfElseLayout?.engine.rtl else { return }
+
+    // Prioritize arrow directions, so it won't obstruct the view of the block
+    popoverPresentationController.bky_prioritizeArrowDirections([.down, .right, .left], rtl: rtl)
   }
 }
 
@@ -136,15 +150,24 @@ fileprivate class MutatorIfElseViewPopoverController: UITableViewController {
 
     self.init(style: .plain)
     self.mutatorIfElseLayout = mutatorIfElseLayout
+
+    // Set all estimated heights to 0 so that `tableView.contentSize` is calculated properly
+    // instead of using estimated values.
+    tableView.estimatedRowHeight = 0
+    tableView.estimatedSectionHeaderHeight = 0
+    tableView.estimatedSectionFooterHeight = 0
+
+    tableView.allowsSelection = false
+
+    // Load data immediately
+    tableView.reloadData()
+
+    // Set the preferred content size immediately so that the correct popover arrow direction
+    // can be determined by the instantiator of this object.
+    preferredContentSize = CGSize(width: 220, height: tableView.contentSize.height)
   }
 
   // MARK: - Super
-
-  override func viewDidLoad() {
-    super.viewDidLoad()
-
-    tableView.allowsSelection = false
-  }
 
   override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
     return 2
@@ -201,7 +224,7 @@ fileprivate class MutatorIfElseViewPopoverController: UITableViewController {
 
   // MARK: - Else Mutation
 
-  fileprivate dynamic func updateElseCount() {
+  @objc fileprivate dynamic func updateElseCount() {
     if let cell = tableView.cellForRow(at: IndexPath(row: 1, section: 0)),
       let accessoryView = cell.accessoryView as? UISwitch
     {

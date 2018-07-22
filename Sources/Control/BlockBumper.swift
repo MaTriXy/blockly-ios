@@ -19,7 +19,7 @@ import Foundation
  Object responsible for bumping blocks away from each other.
  */
 @objc(BKYBlockBumper)
-open class BlockBumper: NSObject {
+@objcMembers open class BlockBumper: NSObject {
   // MARK: - Properties
 
   /// The workspace layout coordinator where blocks are being bumped
@@ -50,7 +50,8 @@ open class BlockBumper: NSObject {
     _ impingingConnection: Connection, awayFromConnection stationaryConnection: Connection)
   {
     guard let blockLayout = impingingConnection.sourceBlock?.layout,
-      let blockGroupLayout = blockLayout.rootBlockGroupLayout else {
+      let blockGroupLayout = blockLayout.rootBlockGroupLayout,
+      !blockGroupLayout.dragging else {
       return
     }
 

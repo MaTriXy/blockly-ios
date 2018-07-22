@@ -22,35 +22,31 @@ import UIKit
 @objc(BKYWorkbenchViewControllerDelegate)
 public protocol WorkbenchViewControllerDelegate: class {
   /**
-   Event that is called when a `WorkbenchViewController` updates its `state`.
+   Event that is called when a workbench updates its UI state.
+
+   - parameter workbenchViewController: The `WorkbenchViewController`.
+   - parameter state: The current `WorkbenchViewController.UIState`.
    */
   func workbenchViewController(
     _ workbenchViewController: WorkbenchViewController,
     didUpdateState state: WorkbenchViewController.UIState)
-}
-
-/**
- Adding Swift convenience functions to `BKYWorkbenchViewControllerUIState`.
- */
-extension WorkbenchViewControllerUIState {
-  /**
-   Initializes the workbench view controller UI state with a `WorkbenchViewController.UIStateValue`.
-
-   - parameter value: The `WorkbenchViewControllerUIStateValue` of the state.
-   */
-  public init(value: WorkbenchViewControllerUIStateValue) {
-    self.init(rawValue: 1 << UInt(value.rawValue))
-  }
 
   /**
-   Checks if this state intersects with another state.
+   Optional method that a delegate may override to specify the set of UI state values that should
+   be kept in the workbench when a specific value is added via
+   `WorkbenchViewController.addUIStateValue(_:animated)`.
 
-   - parameter other: The other `WorkbenchViewControllerUIState`.
-   - returns: `true` if this state and `other` share any common options. `false` otherwise.
+   - parameter workbenchViewController: The `WorkbenchViewController`.
+   - parameter keepStateValues: The default set of `UIStateValue` values that the system recommends
+   keeping when `stateValue` is added.
+   - parameter stateValue: The `UIStateValue` that is being added to the workbench.
+   - returns: The set of `UIStateValue` values that should be kept.
    */
-  public func intersectsWith(_ other: WorkbenchViewControllerUIState) -> Bool {
-    return intersection(other).rawValue != 0
-  }
+  @objc optional func workbenchViewController(
+    _ workbenchViewController: WorkbenchViewController,
+    shouldKeepStates keepStateValues: Set<WorkbenchViewController.UIStateValue>,
+    forStateValue stateValue: WorkbenchViewController.UIStateValue)
+    -> Set<WorkbenchViewController.UIStateValue>
 }
 
 // TODO(#61): Refactor parts of `WorkbenchViewController` into `WorkspaceViewController`.
@@ -59,7 +55,7 @@ extension WorkbenchViewControllerUIState {
  View controller for editing a workspace.
  */
 @objc(BKYWorkbenchViewController)
-open class WorkbenchViewController: UIViewController {
+@objcMembers open class WorkbenchViewController: UIViewController {
 
   // MARK: - Constants
 
@@ -101,36 +97,80 @@ open class WorkbenchViewController: UIViewController {
 
   // MARK: - Aliases
 
-  /// Details the bitflags for `WorkbenchViewController`'s state.
-  public typealias UIState = WorkbenchViewControllerUIState
-
-  /// Specifies the bitflags for individual state values of `WorkbenchViewController`.
-  public typealias UIStateValue = WorkbenchViewControllerUIStateValue
+  /// Set of `UIStateValue` values representing the workbench state.
+  public typealias UIState = Set<UIStateValue>
+  /// Underlying type for a UI state value.
+  public typealias UIStateValue = Int
 
   // MARK: - Properties
 
+  /// Total number of `UIStateValue` values that have been created via
+  /// `WorkbenchViewController.newUIStateValue()`.
+  private static var numberOfUIStateValues = 0
+  /// State indicating the trash can is open.
+  public let stateTrashCanOpen = WorkbenchViewController.newUIStateValue()
+  /// State indicating the trash can is highlighted
+  public let stateTrashCanHighlighted = WorkbenchViewController.newUIStateValue()
+  /// State indicating the toolbox category is open.
+  public let stateCategoryOpen = WorkbenchViewController.newUIStateValue()
+  /// State indicating a text field is being edited.
+  public let stateEditingTextField = WorkbenchViewController.newUIStateValue()
+  /// State indicating a block is currently being dragged.
+  public let stateDraggingBlock = WorkbenchViewController.newUIStateValue()
+  /// State indicating a popover is being presented.
+  public let statePresentingPopover = WorkbenchViewController.newUIStateValue()
+  /// State indicating the user panned the workspace.
+  public let stateDidPanWorkspace = WorkbenchViewController.newUIStateValue()
+  /// State indicating the user tapped the workspace.
+  public let stateDidTapWorkspace = WorkbenchViewController.newUIStateValue()
+
   /// The main workspace view controller
-  open fileprivate(set) var workspaceViewController: WorkspaceViewController! {
-    didSet {
-      oldValue?.delegate = nil
-      workspaceViewController?.delegate = self
-    }
-  }
+  public private(set) lazy var workspaceViewController: WorkspaceViewController = {
+    // Create main workspace view
+    let workspaceViewController = WorkspaceViewController(viewFactory: viewFactory)
+    workspaceViewController.delegate = self
+    workspaceViewController.workspaceLayoutCoordinator?.variableNameManager = variableNameManager
+    workspaceViewController.workspaceView.allowZoom = true
+    workspaceViewController.workspaceView.scrollView.panGestureRecognizer
+      .addTarget(self, action: #selector(didPanWorkspaceView(_:)))
+    workspaceViewController.workspaceView.scrollView.addGestureRecognizer(
+      workspaceTapGestureRecognizer)
+    workspaceViewController.workspaceView.dragLayerView = workspaceDragLayerView
+    return workspaceViewController
+  }()
 
   /// A convenience property to `workspaceViewController.workspaceView`
-  fileprivate var workspaceView: WorkspaceView! {
+  fileprivate var workspaceView: WorkspaceView {
     return workspaceViewController.workspaceView
   }
 
+  /// Layer that temporarily holds blocks when they are dragged.
+  fileprivate let workspaceDragLayerView = ZIndexedGroupView(frame: .zero)
+
   /// The trash can view.
-  open fileprivate(set) var trashCanView: TrashCanView!
+  open fileprivate(set) lazy var trashCanView: TrashCanView = {
+    // Create trash can button
+    let trashCanView = TrashCanView(imageNamed: "trash_can")
+    trashCanView.button
+      .addTarget(self, action: #selector(didTapTrashCan(_:)), for: .touchUpInside)
+    trashCanView.button.isUserInteractionEnabled = self.keepTrashedBlocks
+    trashCanView.tintColor = ColorPalette.grey.tint800
+    return trashCanView
+  }()
 
   /// The undo button
   open fileprivate(set) lazy var undoButton: UIButton = {
-    let undoButton = UIButton(type: .custom)
-    if let image = ImageLoader.loadImage(named: "undo", forClass: WorkbenchViewController.self) {
+    let undoButton = UIButton(type: .system)
+    if let image = ImageLoader.loadImage(
+      named: "undo", forClass: WorkbenchViewController.self) {
       undoButton.setImage(image, for: .normal)
-      undoButton.contentMode = .center
+      undoButton.imageView?.contentMode = .scaleAspectFit
+      undoButton.contentHorizontalAlignment = .fill
+      undoButton.contentVerticalAlignment = .fill
+      if self.engine.rtl {
+        // Flip the image horizontally for RTL
+        undoButton.transform = CGAffineTransform(scaleX: -1, y: 1)
+      }
     }
     undoButton.addTarget(self, action: #selector(didTapUndoButton(_:)), for: .touchUpInside)
     undoButton.isEnabled = false
@@ -139,10 +179,18 @@ open class WorkbenchViewController: UIViewController {
 
   /// The redo button
   open fileprivate(set) lazy var redoButton: UIButton = {
-    let redoButton = UIButton(type: .custom)
-    if let image = ImageLoader.loadImage(named: "redo", forClass: WorkbenchViewController.self) {
+    let redoButton = UIButton(type: .system)
+    if let image = ImageLoader.loadImage(
+      named: "redo", forClass: WorkbenchViewController.self) {
       redoButton.setImage(image, for: .normal)
       redoButton.contentMode = .center
+      redoButton.imageView?.contentMode = .scaleAspectFit
+      redoButton.contentHorizontalAlignment = .fill
+      redoButton.contentVerticalAlignment = .fill
+      if self.engine.rtl {
+        // Flip the image horizontally for RTL
+        redoButton.transform = CGAffineTransform(scaleX: -1, y: 1)
+      }
     }
     redoButton.addTarget(self, action: #selector(didTapRedoButton(_:)), for: .touchUpInside)
     redoButton.isEnabled = false
@@ -150,15 +198,14 @@ open class WorkbenchViewController: UIViewController {
   }()
 
   /// The toolbox category view controller.
-  open fileprivate(set) var toolboxCategoryViewController: ToolboxCategoryViewController! {
-    didSet {
-      // We need to listen for when block views are added/removed from the block list
-      // so we can attach pan gesture recognizers to those blocks (for dragging them onto
-      // the workspace)
-      oldValue?.delegate = nil
-      toolboxCategoryViewController.delegate = self
-    }
-  }
+  open fileprivate(set) lazy var toolboxCategoryViewController: ToolboxCategoryViewController = {
+    let viewController = ToolboxCategoryViewController(
+      viewFactory: self.viewFactory,
+      orientation: self.style.toolboxOrientation,
+      variableNameManager: self.variableNameManager)
+    viewController.delegate = self
+    return viewController
+  }()
 
   /// The layout engine to use for all views
   public final let engine: LayoutEngine
@@ -172,7 +219,7 @@ open class WorkbenchViewController: UIViewController {
 
   /// The style of workbench
   public final let style: Style
-  /// The current state of the main workspace
+  /// The main workspace.
   open var workspace: Workspace? {
     return _workspaceLayout?.workspace
   }
@@ -215,7 +262,21 @@ open class WorkbenchViewController: UIViewController {
 
       if !enableTrashCan {
         // Hide trash can folder
-        removeUIStateValue(.trashCanOpen, animated: false)
+        removeUIStateValue(stateTrashCanOpen, animated: false)
+      }
+    }
+  }
+
+  /// If `true`, blocks dragged into trash are kept in memory and can be recalled by tapping the
+  /// trash can. If `false`, blocks are not kept in memory and tapping the trash can is disabled.
+  /// Defaults to `false`.
+  open var keepTrashedBlocks: Bool = false {
+    didSet {
+      trashCanView.button.isUserInteractionEnabled = keepTrashedBlocks
+
+      if !keepTrashedBlocks {
+        // Hide trash can folder
+        removeUIStateValue(stateTrashCanOpen, animated: false)
       }
     }
   }
@@ -229,8 +290,28 @@ open class WorkbenchViewController: UIViewController {
   /// Enables or disables the ability to undo/redo actions in the workspace. Defaults to `true`.
   open var allowUndoRedo: Bool = true {
     didSet {
-      setUndoRedoVisible(allowUndoRedo)
+      undoButton.isHidden = !allowUndoRedo
+      redoButton.isHidden = !allowUndoRedo
     }
+  }
+
+  /// Keeps track of whether `self.navigationController.interactivePopGestureRecognizer` was
+  /// enabled prior to loading this view controller. This value is used for restoring its previous
+  /// state after this view controller has disappeared.
+  fileprivate var _wasInteractivePopGestureRecognizerEnabled: Bool = false
+
+  /// Enables or disables the `interactivePopGestureRecognizer` on `self.navigationController` (i.e.
+  /// the backswipe gesture on `UINavigationController`). Defaults to `false`.
+  open var allowInteractivePopGestureRecognizer: Bool = false {
+    didSet {
+      setInteractivePopGestureRecognizerEnabled(allowInteractivePopGestureRecognizer)
+    }
+  }
+
+  /// The background color to use for the main workspace.
+  public var workspaceBackgroundColor: UIColor? {
+    get { return view.backgroundColor }
+    set { view.backgroundColor = newValue }
   }
 
   /**
@@ -240,8 +321,8 @@ open class WorkbenchViewController: UIViewController {
   */
   open var toolboxDrawerStaysOpen: Bool = false
 
-  /// The current state of the UI
-  open fileprivate(set) var state = UIState.defaultState
+  /// A set containing all active states of the UI.
+  open fileprivate(set) var state = WorkbenchViewController.UIState()
 
   /// The delegate for events that occur in the workbench
   open weak var delegate: WorkbenchViewControllerDelegate?
@@ -249,30 +330,59 @@ open class WorkbenchViewController: UIViewController {
   /// Controls logic for dragging blocks around in the workspace
   fileprivate let _dragger = Dragger()
   /// Controller for listing the toolbox categories
-  fileprivate var _toolboxCategoryListViewController: ToolboxCategoryListViewController!
+  open fileprivate(set) lazy var toolboxCategoryListViewController:
+    ToolboxCategoryListViewController = {
+    // Set up toolbox category list view controller
+    let viewController =
+      ToolboxCategoryListViewController(orientation: self.style.toolboxOrientation)
+    viewController.delegate = self
+    viewController.view.backgroundColor = .white
+    return viewController
+  }()
   /// Controller for managing the trash can workspace
-  fileprivate var _trashCanViewController: TrashCanViewController!
-  /// Flag indicating if the `self._trashCanViewController` is being shown
+  open fileprivate(set) lazy var trashCanViewController: TrashCanViewController = {
+    // Set up trash can folder view controller
+    let viewController = TrashCanViewController(
+      engine: self.engine,
+      layoutBuilder: self.layoutBuilder,
+      layoutDirection: self.style.trashLayoutDirection,
+      viewFactory: self.viewFactory)
+    viewController.delegate = self
+    return viewController
+  }()
+  /// Flag indicating if the `self.trashCanViewController` is being shown
   fileprivate var _trashCanVisible: Bool = false
 
   /// Flag determining if this view controller should be recording events for undo/redo purposes.
-  fileprivate var _recordEvents = true
+  open fileprivate(set) var shouldRecordEvents = true
 
   /// Stack of events to run when applying "undo" actions. The events are sorted in
   /// chronological order, where the first event to "undo" is at the end of the array.
-  fileprivate var _undoStack = [BlocklyEvent]() {
+  open var undoStack = [BlocklyEvent]() {
     didSet {
-      undoButton.isEnabled = !_undoStack.isEmpty
+      undoButton.isEnabled = !undoStack.isEmpty
     }
   }
 
   /// Stack of events to run when applying "redo" actions. The events are sorted in reverse
   /// chronological order, where the first event to "redo" is at the end of the array.
-  fileprivate var _redoStack = [BlocklyEvent]() {
+  open var redoStack = [BlocklyEvent]() {
     didSet {
-      redoButton.isEnabled = !_redoStack.isEmpty
+      redoButton.isEnabled = !redoStack.isEmpty
     }
   }
+
+  /// The pan gesture recognizer attached to the main workspace.
+  public var workspacePanGesetureRecognizer: UIPanGestureRecognizer! {
+    return workspaceViewController.workspaceView.scrollView.panGestureRecognizer
+  }
+
+  /// The tap gesture recognizer attached to the main workspace.
+  public private(set) lazy var workspaceTapGestureRecognizer: UITapGestureRecognizer = {
+    let tapGesture =
+      UITapGestureRecognizer(target: self, action: #selector(didTapWorkspaceView(_:)))
+    return tapGesture
+  }()
 
   // MARK: - Initializers
 
@@ -285,13 +395,12 @@ open class WorkbenchViewController: UIViewController {
   public init(style: Style) {
     self.style = style
     self.engine = DefaultLayoutEngine()
-    self.layoutBuilder = LayoutBuilder(layoutFactory: DefaultLayoutFactory())
+    self.layoutBuilder = LayoutBuilder(layoutFactory: LayoutFactory())
     self.blockFactory = BlockFactory()
     self.viewFactory = ViewFactory()
     self.variableNameManager = NameManager()
     self.procedureCoordinator = ProcedureCoordinator()
     super.init(nibName: nil, bundle: nil)
-    commonInit()
   }
 
   /**
@@ -318,7 +427,6 @@ open class WorkbenchViewController: UIViewController {
     self.variableNameManager = variableNameManager
     self.procedureCoordinator = ProcedureCoordinator()
     super.init(nibName: nil, bundle: nil)
-    commonInit()
   }
 
   /**
@@ -331,57 +439,14 @@ open class WorkbenchViewController: UIViewController {
     fatalError("Called unsupported initializer")
   }
 
-  fileprivate func commonInit() {
-    // Create main workspace view
-    workspaceViewController = WorkspaceViewController(viewFactory: viewFactory)
-    workspaceViewController.workspaceLayoutCoordinator?.variableNameManager = variableNameManager
-    workspaceViewController.workspaceView.allowZoom = true
-    workspaceViewController.workspaceView.scrollView.panGestureRecognizer
-      .addTarget(self, action: #selector(didPanWorkspaceView(_:)))
-    let tapGesture =
-      UITapGestureRecognizer(target: self, action: #selector(didTapWorkspaceView(_:)))
-    workspaceViewController.workspaceView.scrollView.addGestureRecognizer(tapGesture)
-
-    // Create trash can button
-    let trashCanView = TrashCanView(imageNamed: "trash_can")
-    trashCanView.button
-      .addTarget(self, action: #selector(didTapTrashCan(_:)), for: .touchUpInside)
-    self.trashCanView = trashCanView
-
-    // Set up trash can folder view controller
-    _trashCanViewController = TrashCanViewController(
-      engine: engine, layoutBuilder: layoutBuilder, layoutDirection: style.trashLayoutDirection,
-      viewFactory: viewFactory)
-    _trashCanViewController.delegate = self
-
-    // Set up toolbox category list view controller
-    _toolboxCategoryListViewController = ToolboxCategoryListViewController(
-      orientation: style.toolboxOrientation)
-    _toolboxCategoryListViewController.delegate = self
-
-    // Create toolbox views
-    toolboxCategoryViewController = ToolboxCategoryViewController(viewFactory: viewFactory,
-      orientation: style.toolboxOrientation, variableNameManager: variableNameManager)
-
-    // Synchronize the procedure coordinator
-    procedureCoordinator?.syncWithWorkbench(self)
-
-    // Register for keyboard notifications
-    NotificationCenter.default.addObserver(
-      self, selector: #selector(keyboardWillShowNotification(_:)),
-      name: NSNotification.Name.UIKeyboardWillShow, object: nil)
-    NotificationCenter.default.addObserver(
-      self, selector: #selector(keyboardWillHideNotification(_:)),
-      name: NSNotification.Name.UIKeyboardWillHide, object: nil)
-
-    // Listen for Blockly events
-    EventManager.shared.addListener(self)
-  }
-
   deinit {
     // Unregister all notifications
     NotificationCenter.default.removeObserver(self)
+
+    // Unregister as a listener for the EventManager, and fire any pending events to
+    // effectively clear out events created by this workbench.
     EventManager.shared.removeListener(self)
+    EventManager.shared.firePendingEvents()
   }
 
   // MARK: - Super
@@ -389,32 +454,64 @@ open class WorkbenchViewController: UIViewController {
   open override func loadView() {
     super.loadView()
 
-    self.view.backgroundColor = UIColor(white: 0.9, alpha: 1.0)
-    self.view.autoresizesSubviews = true
-    self.view.autoresizingMask = [.flexibleHeight, .flexibleWidth]
+    // Set default styles
+    workspaceBackgroundColor = ColorPalette.grey.tint50
+    undoButton.tintColor = ColorPalette.grey.tint800
+    redoButton.tintColor = ColorPalette.grey.tint800
+    toolboxCategoryListViewController.categoryFont = UIFont.systemFont(ofSize: 16)
+    toolboxCategoryListViewController.unselectedCategoryTextColor = ColorPalette.grey.tint900
+    toolboxCategoryListViewController.unselectedCategoryBackgroundColor = ColorPalette.grey.tint300
+    toolboxCategoryListViewController.selectedCategoryTextColor = ColorPalette.grey.tint100
+    toolboxCategoryViewController.view.backgroundColor =
+      ColorPalette.grey.tint300.withAlphaComponent(0.75)
+    trashCanViewController.view.backgroundColor =
+      ColorPalette.grey.tint300.withAlphaComponent(0.75)
+
+    // Synchronize the procedure coordinator
+    procedureCoordinator?.syncWithWorkbench(self)
+
+    view.clipsToBounds = true
+    view.autoresizesSubviews = true
+    view.autoresizingMask = [.flexibleHeight, .flexibleWidth]
 
     // Add child view controllers
     addChildViewController(workspaceViewController)
-    addChildViewController(_trashCanViewController)
-    addChildViewController(_toolboxCategoryListViewController)
+    addChildViewController(trashCanViewController)
+    addChildViewController(toolboxCategoryListViewController)
     addChildViewController(toolboxCategoryViewController)
 
-    // Set up auto-layout constraints
-    let iconPadding = CGFloat(25)
-    let views: [String: UIView] = [
-      "toolboxCategoriesListView": _toolboxCategoryListViewController.view,
+    // Add views
+    let viewInfo: [String: Any] = [
+      "toolboxCategoriesListView": toolboxCategoryListViewController.view,
       "toolboxCategoryView": toolboxCategoryViewController.view,
       "workspaceView": workspaceViewController.view,
       "trashCanView": trashCanView,
-      "trashCanFolderView": _trashCanViewController.view,
+      "trashCanFolderView": trashCanViewController.view,
       "undoButton": undoButton,
       "redoButton": redoButton,
+      "topGuide": topLayoutGuide,
+      "bottomGuide": bottomLayoutGuide
     ]
+    let onlyViews = Array(viewInfo.values).filter({ $0 is UIView }) as! [UIView]
+    view.bky_addSubviews(onlyViews)
+    view.addSubview(workspaceDragLayerView)
+
+    // Order the subviews from back to front
+    view.sendSubview(toBack: workspaceViewController.view)
+    view.bringSubview(toFront: trashCanViewController.view)
+    view.bringSubview(toFront: toolboxCategoryViewController.view)
+    view.bringSubview(toFront: workspaceDragLayerView)
+    view.bringSubview(toFront: toolboxCategoryListViewController.view)
+
+    // Set up auto-layout constraints
+    let undoRedoButtonSize = CGSize(width: 36, height: 36)
+    let iconPadding = CGFloat(25)
     let metrics = [
       "iconPadding": iconPadding,
+      "undoRedoButtonWidth": undoRedoButtonSize.width,
+      "undoRedoButtonHeight": undoRedoButtonSize.height
     ]
-    let constraints: [String]
-
+    var constraints = [String]()
     if style == .alternate {
       // Position the button inside the trashCanView to be `(iconPadding, iconPadding)`
       // away from the top-trailing corner.
@@ -428,18 +525,37 @@ open class WorkbenchViewController: UIViewController {
         // Position the toolbox category view above the list view
         "H:|[toolboxCategoryView]|",
         "V:[toolboxCategoryView][toolboxCategoriesListView]",
-        // Position the undo/redo buttons along the top-leading margin
-        "H:|-(iconPadding)-[undoButton]-(iconPadding)-[redoButton]",
-        "V:|-(iconPadding)-[undoButton]",
-        "V:|-(iconPadding)-[redoButton]",
-        // Position the trash can button along the top-trailing margin
-        "H:[trashCanView]|",
-        "V:|[trashCanView]",
+        // Position the undo/redo buttons along the top-leading margin (horizontal part handled
+        // below).
+        "H:[undoButton(undoRedoButtonWidth)]",
+        "V:[undoButton(undoRedoButtonHeight)]",
+        "H:[redoButton(undoRedoButtonWidth)]",
+        "V:[redoButton(undoRedoButtonHeight)]",
+        "H:[undoButton]-(iconPadding)-[redoButton]",
+        "V:[topGuide]-(iconPadding)-[undoButton]",
+        "V:[topGuide]-(iconPadding)-[redoButton]",
+        // Position the trash can button along the top-trailing margin (horizontal part handled
+        // below).
+        "V:[topGuide][trashCanView]",
         // Position the trash can folder view on the trailing edge of the view, between the toolbox
         // category view and trash can button
         "H:[trashCanFolderView]|",
         "V:[trashCanView]-(iconPadding)-[trashCanFolderView]-[toolboxCategoryView]",
       ]
+
+      // If possible, create horizontal constraints that respect the safe area. If not, default
+      // to using the superview's leading/trailing margins.
+      if #available(iOS 11.0, *) {
+        undoButton.leadingAnchor.constraint(
+          equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: iconPadding).isActive = true
+        trashCanView.trailingAnchor.constraint(
+          equalTo: view.safeAreaLayoutGuide.trailingAnchor).isActive = true
+      } else {
+        constraints.append(contentsOf: [
+          "H:|-(iconPadding)-[undoButton]",
+          "H:[trashCanView]|"
+        ])
+      }
     } else {
       // Position the button inside the trashCanView to be `(iconPadding, iconPadding)`
       // away from the bottom-trailing corner.
@@ -454,41 +570,47 @@ open class WorkbenchViewController: UIViewController {
         "H:[toolboxCategoriesListView][toolboxCategoryView]",
         "V:|[toolboxCategoryView]|",
         // Position the undo/redo buttons along the bottom-leading margin
+        "H:[undoButton(undoRedoButtonWidth)]",
+        "V:[undoButton(undoRedoButtonHeight)]",
+        "H:[redoButton(undoRedoButtonWidth)]",
+        "V:[redoButton(undoRedoButtonHeight)]",
         "H:[toolboxCategoriesListView]-(iconPadding)-[undoButton]-(iconPadding)-[redoButton]",
-        "V:[undoButton]-(iconPadding)-|",
-        "V:[redoButton]-(iconPadding)-|",
-        // Position the trash can button along the bottom-trailing margin
-        "H:[trashCanView]|",
-        "V:[trashCanView]|",
+        "V:[undoButton]-(iconPadding)-[bottomGuide]",
+        "V:[redoButton]-(iconPadding)-[bottomGuide]",
+        // Position the trash can button along the bottom-trailing margin (horizontal part handled
+        // below).
+        "V:[trashCanView][bottomGuide]",
         // Position the trash can folder view on the bottom of the view, between the toolbox
         // category view and trash can button
         "H:[toolboxCategoryView]-[trashCanFolderView]-(iconPadding)-[trashCanView]",
         "V:[trashCanFolderView]|",
       ]
+
+      // If possible, create horizontal constraints that respect the safe area. If not, default
+      // to using the superview's leading/trailing margins.
+      if #available(iOS 11.0, *) {
+        trashCanView.trailingAnchor.constraint(
+          equalTo: view.safeAreaLayoutGuide.trailingAnchor).isActive = true
+      } else {
+        constraints.append(contentsOf: [
+          "H:[trashCanView]|"
+        ])
+      }
     }
 
-    self.view.bky_addSubviews(Array(views.values))
-    self.view.bky_addVisualFormatConstraints(constraints, metrics: metrics, views: views)
+    // Add constraints
+    view.bky_addVisualFormatConstraints(constraints, metrics: metrics, views: viewInfo)
 
-    self.view.bringSubview(toFront: toolboxCategoryViewController.view)
-    self.view.sendSubview(toBack: workspaceViewController.view)
-
+    // Attach the block pan gesture recognizer to the entire view (so it can block out any other
+    // once touches once its gesture state turns to `.began`).
     let panGesture = BlocklyPanGestureRecognizer(targetDelegate: self)
     panGesture.delegate = self
-    workspaceViewController.view.addGestureRecognizer(panGesture)
-
-    let toolboxGesture = BlocklyPanGestureRecognizer(targetDelegate: self)
-    toolboxGesture.delegate = self
-    toolboxCategoryViewController.view.addGestureRecognizer(toolboxGesture)
-
-    let trashGesture = BlocklyPanGestureRecognizer(targetDelegate: self)
-    trashGesture.delegate = self
-    _trashCanViewController.view.addGestureRecognizer(trashGesture)
+    view.addGestureRecognizer(panGesture)
 
     // Signify to view controllers that they've been moved to this parent
     workspaceViewController.didMove(toParentViewController: self)
-    _trashCanViewController.didMove(toParentViewController: self)
-    _toolboxCategoryListViewController.didMove(toParentViewController: self)
+    trashCanViewController.didMove(toParentViewController: self)
+    toolboxCategoryListViewController.didMove(toParentViewController: self)
     toolboxCategoryViewController.didMove(toParentViewController: self)
 
     // Update workspace view edge insets to account for control overlays
@@ -515,6 +637,20 @@ open class WorkbenchViewController: UIViewController {
         bky_print("Could not create a default workspace: \(error)")
       }
     }
+
+    // Register for keyboard notifications
+    NotificationCenter.default.addObserver(
+      self, selector: #selector(keyboardWillShowNotification(_:)),
+      name: NSNotification.Name.UIKeyboardWillShow, object: nil)
+    NotificationCenter.default.addObserver(
+      self, selector: #selector(keyboardWillHideNotification(_:)),
+      name: NSNotification.Name.UIKeyboardWillHide, object: nil)
+
+    // Clear out any pending events first. We only care about events moving forward.
+    EventManager.shared.firePendingEvents()
+
+    // Listen for Blockly events
+    EventManager.shared.addListener(self)
   }
 
   open override func viewDidLoad() {
@@ -524,6 +660,25 @@ open class WorkbenchViewController: UIViewController {
     setTrashCanViewVisible(enableTrashCan)
 
     refreshView()
+  }
+
+  open override func viewDidAppear(_ animated: Bool) {
+    super.viewDidAppear(animated)
+
+    // Enable/disable the pop gesture recognizer
+    _wasInteractivePopGestureRecognizerEnabled = interactivePopGestureRecognizerEnabled()
+    setInteractivePopGestureRecognizerEnabled(allowInteractivePopGestureRecognizer)
+  }
+
+  open override func viewWillDisappear(_ animated: Bool) {
+    super.viewWillDisappear(animated)
+
+    // Set the pop gesture recognizer to the state as it existed prior to this view controller
+    // appearing.
+    setInteractivePopGestureRecognizerEnabled(_wasInteractivePopGestureRecognizerEnabled)
+
+    // Reset all existing drags.
+    _dragger.cancelAllDrags()
   }
 
   // MARK: - Public
@@ -582,11 +737,11 @@ open class WorkbenchViewController: UIViewController {
 
     refreshView()
 
-    // Automatically change the viewport to show the top-most block
-    if let topBlock =
-      workspace.topLevelBlocks().sorted(by: { $0.0.position.y <= $0.1.position.y }).first {
-      scrollBlockIntoView(blockUUID: topBlock.uuid, animated: false)
-    }
+    // Automatically change the viewport to show the top-leading part of the workspace.
+    setViewport(to: .topLeading, animated: false)
+
+    // Fire any events that were created as a result of loading a new workspace.
+    EventManager.shared.firePendingEvents()
   }
 
   /**
@@ -620,6 +775,9 @@ open class WorkbenchViewController: UIViewController {
     procedureCoordinator?.syncWithWorkbench(self)
 
     refreshView()
+
+    // Fire any events that were created as a result of loading a new toolbox.
+    EventManager.shared.firePendingEvents()
   }
 
   /**
@@ -627,28 +785,39 @@ open class WorkbenchViewController: UIViewController {
    */
   open func refreshView() {
     do {
-      try workspaceViewController?.loadWorkspaceLayoutCoordinator(_workspaceLayoutCoordinator)
+      try workspaceViewController.loadWorkspaceLayoutCoordinator(_workspaceLayoutCoordinator)
     } catch let error {
       bky_assertionFailure("Could not load workspace layout: \(error)")
     }
 
-    _toolboxCategoryListViewController?.toolboxLayout = _toolboxLayout
-    _toolboxCategoryListViewController?.refreshView()
+    toolboxCategoryListViewController.toolboxLayout = _toolboxLayout
+    toolboxCategoryListViewController.refreshView()
 
-    toolboxCategoryViewController?.toolboxLayout = _toolboxLayout
+    toolboxCategoryViewController.toolboxLayout = _toolboxLayout
 
-    resetUIState()
+    // Set the state to the default empty state
+    refreshUIState([])
     updateWorkspaceCapacity()
   }
 
   // MARK: - Private
 
-  fileprivate dynamic func didPanWorkspaceView(_ gesture: UIPanGestureRecognizer) {
-    addUIStateValue(.didPanWorkspace)
+  /**
+   Method called by a gesture recognizer when the main workspace area has been panned.
+
+   - parameter gesture: The `UIPanGestureRecognizer` that fired the method.
+   */
+  @objc private dynamic func didPanWorkspaceView(_ gesture: UIPanGestureRecognizer) {
+    addUIStateValue(stateDidPanWorkspace)
   }
 
-  fileprivate dynamic func didTapWorkspaceView(_ gesture: UITapGestureRecognizer) {
-    addUIStateValue(.didTapWorkspace)
+  /**
+   Method called by a gesture recognizer when the main workspace area has been tapped.
+
+   - parameter gesture: The `UITapGestureRecognizer` that fired the method.
+   */
+  @objc private dynamic func didTapWorkspaceView(_ gesture: UITapGestureRecognizer) {
+    addUIStateValue(stateDidTapWorkspace)
   }
 
   /**
@@ -657,7 +826,7 @@ open class WorkbenchViewController: UIViewController {
    */
   fileprivate func updateWorkspaceCapacity() {
     if let capacity = _workspaceLayout?.workspace.remainingCapacity {
-      _trashCanViewController.workspace?.deactivateBlockTrees(forGroupsGreaterThan: capacity)
+      trashCanViewController.workspace?.deactivateBlockTrees(forGroupsGreaterThan: capacity)
       _toolboxLayout?.toolbox.categories.forEach {
         $0.deactivateBlockTrees(forGroupsGreaterThan: capacity)
       }
@@ -736,113 +905,129 @@ open class WorkbenchViewController: UIViewController {
 // MARK: - State Handling
 
 extension WorkbenchViewController {
-  // MARK: - Private
+  /**
+   Creates a new `UIStateValue`. Subclasses may call this to create additional state values that
+   should be handled by `WorkbenchViewController`.
+
+   - returns: A unique `UIStateValue`.
+   */
+  public static func newUIStateValue() -> UIStateValue {
+    let key = numberOfUIStateValues
+    numberOfUIStateValues += 1
+    return key
+  }
 
   /**
-   Appends a state to the current state of the UI. This call should be matched a future call to
-   removeUIState(state:animated:).
+   Adds an individual UI state value to the current state of the workbench. Generally, this call
+   should be matched by a future call to `removeUIStateValue(_:animated:)`.
 
-   - parameter state: The state to append to `self.state`.
-   - parameter animated: True if changes in UI state should be animated. False, if not.
+   - parameter stateValue: The `UIStateValue` to add to `self.state`.
+   - parameter animated: `true` if changes in UI state should be animated. `false`, if not.
+   - see: To change the behavior of how the state value is added to the current state, see
+   `WorkbenchViewControllerDelegate.workbenchViewController(_:shouldKeepStates:forStateValue:)`.
    */
-  fileprivate func addUIStateValue(_ stateValue: UIStateValue, animated: Bool = true) {
-    var state = UIState(value: stateValue)
-    let newState: UIState
+  public func addUIStateValue(_ stateValue: UIStateValue, animated: Bool = true) {
+    // Make a list of states to keep when the state is added.
+    var keepStates = Set<UIStateValue>()
 
-    if toolboxDrawerStaysOpen && self.state.intersectsWith(.categoryOpen) {
-      // Always keep the .CategoryOpen state if it existed before
-      state = state.union(.categoryOpen)
+    if toolboxDrawerStaysOpen && self.state.contains(stateCategoryOpen) {
+      // Always keep `stateCategoryOpen` if it existed before
+      keepStates.insert(stateCategoryOpen)
     }
-
-    // When adding a new state, check for compatibility with existing states.
 
     switch stateValue {
-    case .draggingBlock:
+    case stateDraggingBlock:
       // Dragging a block can only co-exist with highlighting the trash can
-      newState = self.state.intersection([.trashCanHighlighted]).union(state)
-    case .trashCanHighlighted:
-      // This state can co-exist with anything, simply add it to the current state
-      newState = self.state.union(state)
-    case .editingTextField:
-      // Allow .EditingTextField to co-exist with .PresentingPopover and .CategoryOpen, but nothing
-      // else
-      newState = self.state.intersection([.presentingPopover, .categoryOpen]).union(state)
-    case .presentingPopover:
-      // If .CategoryOpen already existed, continue to let it exist (as users may want to modify
-      // blocks from inside the toolbox). Disallow everything else.
-      newState = self.state.intersection([.categoryOpen]).union(state)
-    case .defaultState, .didPanWorkspace, .didTapWorkspace, .categoryOpen, .trashCanOpen:
-      // Whenever these states are added, clear out all existing state
-      newState = state
+      keepStates.insert(stateTrashCanHighlighted)
+    case stateTrashCanHighlighted:
+      // This state can co-exist with anything, keep all states.
+      keepStates.formUnion(state)
+    case stateEditingTextField:
+      // Allow `stateEditingTextField` to co-exist with `statePresentingPopover` and
+      // `stateCategoryOpen`, but nothing else
+      keepStates.insert(statePresentingPopover)
+      keepStates.insert(stateCategoryOpen)
+    case statePresentingPopover:
+      // If `stateCategoryOpen` already existed, continue to let it exist (as users may want to
+      // modify blocks from inside the toolbox). Disallow everything else.
+      keepStates.insert(stateCategoryOpen)
+    case stateDidPanWorkspace, stateDidTapWorkspace, stateCategoryOpen, stateTrashCanOpen:
+      // These states are all exclusive. Don't keep anything else.
+      break
+    default:
+      // This is a custom defined state. Let a delegate method handle what states should be kept.
+      break
     }
 
+    // Allow a delegate method to override what states are kept
+    if let delegateKeepStates = delegate?.workbenchViewController?(self,
+                                                                   shouldKeepStates: keepStates,
+                                                                   forStateValue: stateValue) {
+      keepStates = delegateKeepStates
+    }
+
+    // Keep any relevant states from the existing state, and append the new state value.
+    let newState = self.state.intersection(keepStates).union([stateValue])
     refreshUIState(newState, animated: animated)
   }
 
   /**
-   Removes a state to the current state of the UI. This call should have matched a previous call to
-   addUIState(state:animated:).
+   Removes a UI state value from the current state of the workbench. This call should have matched
+   a previous call to `addUIStateValue(_:animated:)`.
 
-   - parameter state: The state to remove from `self.state`.
-   - parameter animated: True if changes in UI state should be animated. False, if not.
+   - parameter stateValue: The `UIStateValue` to remove from `self.state`.
+   - parameter animated: `true` if changes in UI state should be animated. `false`, if not.
    */
-  fileprivate func removeUIStateValue(_ stateValue: UIStateValue, animated: Bool = true) {
+  public func removeUIStateValue(_ stateValue: UIStateValue, animated: Bool = true) {
     // When subtracting a state value, there is no need to check for compatibility.
     // Simply set the new state, minus the given state value.
-    let newState = self.state.subtracting(UIState(value: stateValue))
+    let newState = self.state.subtracting([stateValue])
     refreshUIState(newState, animated: animated)
   }
 
   /**
-   Resets the UI back to its default state.
+   Refreshes the UI based on a set of states.
 
-   - parameter animated: True if changes in UI state should be animated. False, if not.
-   */
-  fileprivate func resetUIState(_ animated: Bool = true) {
-    addUIStateValue(.defaultState, animated: animated)
-  }
-
-  /**
-   Refreshes the UI based on a given state.
-
-   - parameter state: The state to set the UI
-   - parameter animated: True if changes in UI state should be animated. False, if not.
-   - note: This method should not be called directly. Instead, you should call addUIState(...),
-   removeUIState(...), or resetUIState(...).
+   - parameter state: The `WorkbenchViewController.UIState` to set.
+   - parameter animated: `true` if changes in UI state should be animated. `false`, if not.
    */
   fileprivate func refreshUIState(_ state: UIState, animated: Bool = true) {
     self.state = state
 
-    setTrashCanFolderVisible(state.intersectsWith(.trashCanOpen), animated: animated)
+    setTrashCanFolderVisible(state.contains(stateTrashCanOpen), animated: animated)
 
-    trashCanView?.setHighlighted(state.intersectsWith(.trashCanHighlighted), animated: animated)
+    trashCanView.setHighlighted(state.contains(stateTrashCanHighlighted), animated: animated)
 
-    if let selectedCategory = _toolboxCategoryListViewController.selectedCategory
-      , state.intersectsWith(.categoryOpen)
-    {
+    if let selectedCategory = toolboxCategoryListViewController.selectedCategory,
+      state.contains(stateCategoryOpen) {
       // Show the toolbox category
-      toolboxCategoryViewController?.showCategory(selectedCategory, animated: true)
+      toolboxCategoryViewController.showCategory(selectedCategory, animated: animated)
     } else {
       // Hide the toolbox category
-      toolboxCategoryViewController?.hideCategory(animated: animated)
-      _toolboxCategoryListViewController.selectedCategory = nil
+      toolboxCategoryViewController.hideCategory(animated: animated)
+      toolboxCategoryListViewController.selectedCategory = nil
     }
 
-    if !state.intersectsWith(.editingTextField) {
+    if !state.contains(stateEditingTextField) {
       // Force all child text fields to end editing (which essentially dismisses the keyboard if
       // it's currently visible)
       self.view.endEditing(true)
     }
 
-    if !state.intersectsWith(.presentingPopover) && self.presentedViewController != nil {
-      dismiss(animated: animated, completion: nil)
+    if !state.contains(statePresentingPopover),
+      let presentedViewController = self.presentedViewController,
+      !presentedViewController.isBeingDismissed {
+      presentedViewController.dismiss(animated: animated, completion: nil)
     }
 
-    // Always show undo/redo except when blocks are being dragged, text fields are being edited,
+    // Always allow undo/redo except when blocks are being dragged, text fields are being edited,
     // or a popover is being shown.
-    setUndoRedoVisible(
-      !state.intersectsWith([.draggingBlock, .editingTextField, .presentingPopover]))
+    setUndoRedoUserInteractionEnabled(!(
+      state.contains(stateDraggingBlock) ||
+      state.contains(stateEditingTextField) ||
+      state.contains(statePresentingPopover)))
 
+    // Notify the delegate so it can make more changes.
     delegate?.workbenchViewController(self, didUpdateState: state)
   }
 }
@@ -855,35 +1040,35 @@ extension WorkbenchViewController {
 
    - parameter sender: The trash can button that sent the event.
    */
-  fileprivate dynamic func didTapTrashCan(_ sender: UIButton) {
+  @objc fileprivate dynamic func didTapTrashCan(_ sender: UIButton) {
     // Toggle trash can visibility
-    if !_trashCanVisible {
-      addUIStateValue(.trashCanOpen)
+    if !_trashCanVisible && keepTrashedBlocks {
+      addUIStateValue(stateTrashCanOpen)
     } else {
-      removeUIStateValue(.trashCanOpen)
+      removeUIStateValue(stateTrashCanOpen)
     }
   }
 
   fileprivate func setTrashCanViewVisible(_ visible: Bool) {
-    trashCanView?.isHidden = !visible
+    trashCanView.isHidden = !visible
   }
 
   fileprivate func setTrashCanFolderVisible(_ visible: Bool, animated: Bool) {
-    if _trashCanVisible == visible && trashCanView != nil {
+    if _trashCanVisible == visible {
       return
     }
 
     let size: CGFloat = visible ? 300 : 0
     if style == .defaultStyle {
-      _trashCanViewController.setWorkspaceViewHeight(size, animated: animated)
+      trashCanViewController.setWorkspaceViewHeight(size, animated: animated)
     } else {
-      _trashCanViewController.setWorkspaceViewWidth(size, animated: animated)
+      trashCanViewController.setWorkspaceViewWidth(size, animated: animated)
     }
     _trashCanVisible = visible
   }
 
   fileprivate func isGestureTouchingTrashCan(_ gesture: BlocklyPanGestureRecognizer) -> Bool {
-    if let trashCanView = self.trashCanView , !trashCanView.isHidden {
+    if !trashCanView.isHidden {
       return gesture.isTouchingView(trashCanView)
     }
 
@@ -891,7 +1076,7 @@ extension WorkbenchViewController {
   }
 
   fileprivate func isTouchTouchingTrashCan(_ touchPosition: CGPoint, fromView: UIView?) -> Bool {
-    if let trashCanView = self.trashCanView , !trashCanView.isHidden {
+    if !trashCanView.isHidden {
       let trashSpacePosition = trashCanView.convert(touchPosition, from: fromView)
       return trashCanView.bounds.contains(trashSpacePosition)
     }
@@ -903,27 +1088,27 @@ extension WorkbenchViewController {
 // MARK: - EventManagerListener Implementation
 
 extension WorkbenchViewController: EventManagerListener {
-  public func eventManager(_ eventManager: EventManager, didFireEvent event: BlocklyEvent) {
-    guard _recordEvents else {
+  open func eventManager(_ eventManager: EventManager, didFireEvent event: BlocklyEvent) {
+    guard shouldRecordEvents && allowUndoRedo else {
       return
     }
 
     if event.workspaceID == workspace?.uuid {
       // Try to merge this event with the last one in the undo stack
-      if let lastEvent = _undoStack.last,
+      if let lastEvent = undoStack.last,
         let mergedEvent = lastEvent.merged(withNextChronologicalEvent: event) {
-        _undoStack.removeLast()
+        undoStack.removeLast()
 
         if !mergedEvent.isDiscardable() {
-          _undoStack.append(mergedEvent)
+          undoStack.append(mergedEvent)
         }
       } else {
         // Couldn't merge event with last one, just append it
-        _undoStack.append(event)
+        undoStack.append(event)
       }
 
       // Clear the redo stack now since a new event has been added to the undo stack
-      _redoStack.removeAll()
+      redoStack.removeAll()
     }
   }
 }
@@ -931,33 +1116,31 @@ extension WorkbenchViewController: EventManagerListener {
 // MARK: - Undo / Redo
 
 extension WorkbenchViewController {
-  fileprivate func setUndoRedoVisible(_ visible: Bool) {
-    let showButtons = visible && allowUndoRedo
-
-    if (undoButton.isUserInteractionEnabled && !showButtons) ||
-       (!undoButton.isUserInteractionEnabled && showButtons)
+  fileprivate func setUndoRedoUserInteractionEnabled(_ enabled: Bool) {
+    if (undoButton.isUserInteractionEnabled && !enabled) ||
+      (!undoButton.isUserInteractionEnabled && enabled)
     {
-      undoButton.isUserInteractionEnabled = showButtons
-      redoButton.isUserInteractionEnabled = showButtons
+      undoButton.isUserInteractionEnabled = enabled
+      redoButton.isUserInteractionEnabled = enabled
 
       UIView.animate(withDuration: 0.3) {
-        self.undoButton.alpha = showButtons ? 1 : 0.3
-        self.redoButton.alpha = showButtons ? 1 : 0.3
+        self.undoButton.alpha = enabled ? 1 : 0.3
+        self.redoButton.alpha = enabled ? 1 : 0.3
       }
     }
   }
 
-  fileprivate dynamic func didTapUndoButton(_ sender: UIButton) {
-    guard !_undoStack.isEmpty else {
+  @objc fileprivate dynamic func didTapUndoButton(_ sender: UIButton) {
+    guard !undoStack.isEmpty else {
       return
     }
 
     // Don't listen to any events, to avoid echoing
-    _recordEvents = false
+    shouldRecordEvents = false
 
     // Pop off the next group of events from the undo stack. These events will already be sorted
     // in the order which they should be played (reverse chronological order).
-    let events = popGroupedEvents(fromStack: &_undoStack)
+    let events = popGroupedEvents(fromStack: &undoStack)
 
     // Run each event in order
     for event in events {
@@ -965,27 +1148,27 @@ extension WorkbenchViewController {
     }
 
     // Add events back to redo stack
-    _redoStack.append(contentsOf: events)
+    redoStack.append(contentsOf: events)
 
     // Fire pending events before listening to events again, in case outside listeners need to
     // update their state from those events.
     EventManager.shared.firePendingEvents()
 
     // Listen to events again
-    _recordEvents = true
+    shouldRecordEvents = true
   }
 
-  fileprivate dynamic func didTapRedoButton(_ sender: UIButton) {
-    guard !_redoStack.isEmpty else {
+  @objc fileprivate dynamic func didTapRedoButton(_ sender: UIButton) {
+    guard !redoStack.isEmpty else {
       return
     }
 
     // Don't listen to any events, to avoid echoing
-    _recordEvents = false
+    shouldRecordEvents = false
 
     // Pop off the next group of events from the redo stack. These events will already be sorted
     // in the order which they should be played (chronological order).
-    let events = popGroupedEvents(fromStack: &_redoStack)
+    let events = popGroupedEvents(fromStack: &redoStack)
 
     // Run each event in order
     for event in events {
@@ -993,14 +1176,14 @@ extension WorkbenchViewController {
     }
 
     // Add events back to undo stack
-    _undoStack.append(contentsOf: events)
+    undoStack.append(contentsOf: events)
 
     // Fire pending events before listening to events again, in case outside listeners need to
     // update their state from those events.
     EventManager.shared.firePendingEvents()
 
     // Listen to events again
-    _recordEvents = true
+    shouldRecordEvents = true
   }
 }
 
@@ -1064,8 +1247,7 @@ extension WorkbenchViewController {
         if let block = workspace?.allBlocks[blockID] {
           var allBlocksToRemove = block.allBlocksForTree()
           try? _workspaceLayoutCoordinator?.removeBlockTree(block)
-          _ = try? _trashCanViewController.workspaceLayoutCoordinator?.addBlockTree(block)
-
+          addBlockToTrash(block)
           allBlocksToRemove.removeAll()
         }
       }
@@ -1074,10 +1256,10 @@ extension WorkbenchViewController {
         let blockTree = try Block.blockTree(fromXMLString: event.oldXML, factory: blockFactory)
         try _workspaceLayoutCoordinator?.addBlockTree(blockTree.rootBlock)
 
-        if let trashBlock = _trashCanViewController.workspace?.allBlocks[blockTree.rootBlock.uuid]
+        if let trashBlock = trashCanViewController.workspace?.allBlocks[blockTree.rootBlock.uuid]
         {
           // Remove this block from the trash can
-          try _trashCanViewController.workspaceLayoutCoordinator?.removeBlockTree(trashBlock)
+          try trashCanViewController.workspaceLayoutCoordinator?.removeBlockTree(trashBlock)
         }
       } catch let error {
         bky_assertionFailure("Could not re-create block from event: \(error)")
@@ -1183,40 +1365,36 @@ extension WorkbenchViewController {
 
     let value = (runForward ? event.newValue : event.oldValue) ?? ""
     let boolValue = runForward ? event.newBoolValue : event.oldBoolValue
+    let element = event.element
 
-    switch event.element {
-      case .collapsed:
-        // Not supported.
-        break
-      case .comment:
-        block.layout?.comment = value
-      case .disabled:
-        block.layout?.disabled = boolValue
-      case .field:
-        if let fieldName = event.fieldName,
-          let field = block.firstField(withName: fieldName)
-        {
-          do {
-            try field.layout?.setValue(fromSerializedText: value)
-          } catch let error {
-            bky_assertionFailure(
-              "Couldn't set value(\"\(value)\") for field(\"\(fieldName)\"):\n\(error)")
-          }
-        } else {
-          bky_assertionFailure("Can't set non-existent field: \(event.fieldName ?? "")")
-        }
-        break
-      case .inline:
-        block.layout?.inputsInline = boolValue
-      case .mutate:
+    if element == BlocklyEvent.Change.elementComment {
+      block.layout?.comment = value
+    } else if element == BlocklyEvent.Change.elementDisabled {
+      block.layout?.disabled = boolValue
+    } else if element == BlocklyEvent.Change.elementField {
+      if let fieldName = event.fieldName,
+        let field = block.firstField(withName: fieldName)
+      {
         do {
-          // Update the mutator from xml
-          let mutatorLayout = block.mutator?.layout
-          let xml = try AEXMLDocument(xml: value)
-          try mutatorLayout?.performMutation(fromXML: xml)
+          try field.layout?.setValue(fromSerializedText: value)
         } catch let error {
-          bky_assertionFailure("Can't update mutator from xml [\"\(value)\"]:\n\(error)")
+          bky_assertionFailure(
+            "Couldn't set value(\"\(value)\") for field(\"\(fieldName)\"):\n\(error)")
         }
+      } else {
+        bky_assertionFailure("Can't set non-existent field: \(event.fieldName ?? "")")
+      }
+    } else if element == BlocklyEvent.Change.elementInline {
+      block.layout?.inputsInline = boolValue
+    } else if element == BlocklyEvent.Change.elementMutate {
+      do {
+        // Update the mutator from xml
+        let mutatorLayout = block.mutator?.layout
+        let xml = try AEXMLDocument(xml: value)
+        try mutatorLayout?.performMutation(fromXML: xml)
+      } catch let error {
+        bky_assertionFailure("Can't update mutator from xml [\"\(value)\"]:\n\(error)")
+      }
     }
   }
 
@@ -1255,50 +1433,39 @@ extension WorkbenchViewController {
 // MARK: - WorkspaceViewControllerDelegate
 
 extension WorkbenchViewController: WorkspaceViewControllerDelegate {
-  public func workspaceViewController(
-    _ workspaceViewController: WorkspaceViewController, didAddBlockView blockView: BlockView)
-  {
+  open func workspaceViewController(
+    _ workspaceViewController: WorkspaceViewController,
+    didAddBlockView blockView: BlockView) {
     if workspaceViewController == self.workspaceViewController {
       addGestureTracking(forBlockView: blockView)
       updateWorkspaceCapacity()
     }
   }
 
-  public func workspaceViewController(
-    _ workspaceViewController: WorkspaceViewController, didRemoveBlockView blockView: BlockView)
-  {
+  open func workspaceViewController(
+    _ workspaceViewController: WorkspaceViewController,
+    didRemoveBlockView blockView: BlockView) {
     if workspaceViewController == self.workspaceViewController {
       removeGestureTracking(forBlockView: blockView)
       updateWorkspaceCapacity()
     }
   }
 
-  public func workspaceViewController(
-    _ workspaceViewController: WorkspaceViewController, willPresentViewController: UIViewController)
-  {
-    addUIStateValue(.presentingPopover)
+  open func workspaceViewController(
+    _ workspaceViewController: WorkspaceViewController,
+    willPresentViewController viewController: UIViewController) {
+    addUIStateValue(statePresentingPopover)
   }
 
-  public func workspaceViewControllerDismissedViewController(
-    _ workspaceViewController: WorkspaceViewController)
-  {
-    removeUIStateValue(.presentingPopover)
+  open func workspaceViewControllerDismissedViewController(
+    _ workspaceViewController: WorkspaceViewController) {
+    removeUIStateValue(statePresentingPopover)
   }
 }
 
-// MARK: - Toolbox Gesture Tracking
+// MARK: - Block Copying
 
 extension WorkbenchViewController {
-  /**
-   Removes all gesture recognizers from a block view that is part of a workspace flyout (ie. trash
-   can or toolbox).
-
-   - parameter blockView: A given block view.
-   */
-  fileprivate func removeGestureTrackingForWorkspaceFolderBlockView(_ blockView: BlockView) {
-    blockView.bky_removeAllGestureRecognizers()
-  }
-
   /**
    Copies the specified block from a flyout (trash/toolbox) to the workspace.
 
@@ -1329,6 +1496,22 @@ extension WorkbenchViewController {
   }
 
   /**
+   Adds a copy of a given block to the trash.
+
+   - note: If `keepTrashedBlocks` is set to `false`, this method does nothing.
+   - parameter block: The `Block` to add to the trash.
+   */
+  public func addBlockToTrash(_ block: Block) {
+    guard keepTrashedBlocks else { return }
+
+    do {
+      _ = try trashCanViewController.workspaceLayoutCoordinator?.addBlockTree(block)
+    } catch let error {
+      bky_assertionFailure("Could not add block to trash: \(error)")
+    }
+  }
+
+  /**
    Removes a `BlockView` from the trash, when moving it back to the workspace.
 
    - parameter blockView: The `BlockView` to remove.
@@ -1340,12 +1523,12 @@ extension WorkbenchViewController {
       return
     }
 
-    if let trashWorkspace = _trashCanViewController.workspaceView.workspaceLayout?.workspace
+    if let trashWorkspace = trashCanViewController.workspaceView.workspaceLayout?.workspace
       , trashWorkspace.containsBlock(rootBlockLayout.block)
     {
       do {
         // Remove this block view from the trash can
-        try _trashCanViewController.workspace?.removeBlockTree(rootBlockLayout.block)
+        try trashCanViewController.workspace?.removeBlockTree(rootBlockLayout.block)
       } catch let error {
         bky_assertionFailure("Could not remove block from trash can: \(error)")
         return
@@ -1358,16 +1541,15 @@ extension WorkbenchViewController {
 
 extension WorkbenchViewController {
   /**
-   Adds pan and tap gesture recognizers to a block view.
+   Adds custom gesture recognizers to a block view. It is automatically called by
+   `WorkbenchViewController` when a block view is added to the workspace.
+
+   Subclasses may override this to add custom gesture tracking to a block view.
+   The default implementation does nothing.
 
    - parameter blockView: A given block view.
    */
-  fileprivate func addGestureTracking(forBlockView blockView: BlockView) {
-    blockView.bky_removeAllGestureRecognizers()
-
-    let tapGesture =
-      UITapGestureRecognizer(target: self, action: #selector(didRecognizeWorkspaceTapGesture(_:)))
-    blockView.addGestureRecognizer(tapGesture)
+  open func addGestureTracking(forBlockView blockView: BlockView) {
   }
 
   /**
@@ -1375,26 +1557,20 @@ extension WorkbenchViewController {
 
    - parameter blockView: A given block view.
    */
-  fileprivate func removeGestureTracking(forBlockView blockView: BlockView) {
+  open func removeGestureTracking(forBlockView blockView: BlockView) {
     blockView.bky_removeAllGestureRecognizers()
 
     if let blockLayout = blockView.blockLayout {
       _dragger.cancelDraggingBlockLayout(blockLayout)
     }
   }
-
-  /**
-   Tap gesture event handler for a block view inside `self.workspaceView`.
-   */
-  fileprivate dynamic func didRecognizeWorkspaceTapGesture(_ gesture: UITapGestureRecognizer) {
-  }
 }
 
 // MARK: - UIKeyboard notifications
 
 extension WorkbenchViewController {
-  fileprivate dynamic func keyboardWillShowNotification(_ notification: Notification) {
-    addUIStateValue(.editingTextField)
+  @objc fileprivate dynamic func keyboardWillShowNotification(_ notification: Notification) {
+    addUIStateValue(stateEditingTextField)
 
     if let keyboardEndSize =
       (notification.userInfo?[UIKeyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue
@@ -1410,8 +1586,8 @@ extension WorkbenchViewController {
     }
   }
 
-  fileprivate dynamic func keyboardWillHideNotification(_ notification: Notification) {
-    removeUIStateValue(.editingTextField)
+  @objc fileprivate dynamic func keyboardWillHideNotification(_ notification: Notification) {
+    removeUIStateValue(stateEditingTextField)
 
     // Reset the canvas padding of the scroll view (when the keyboard was initially shown)
     let contentInsets = UIEdgeInsets.zero
@@ -1425,13 +1601,13 @@ extension WorkbenchViewController: ToolboxCategoryListViewControllerDelegate {
   public func toolboxCategoryListViewController(
     _ controller: ToolboxCategoryListViewController, didSelectCategory category: Toolbox.Category)
   {
-    addUIStateValue(.categoryOpen, animated: true)
+    addUIStateValue(stateCategoryOpen, animated: true)
   }
 
   public func toolboxCategoryListViewControllerDidDeselectCategory(
     _ controller: ToolboxCategoryListViewController)
   {
-    removeUIStateValue(.categoryOpen, animated: true)
+    removeUIStateValue(stateCategoryOpen, animated: true)
   }
 }
 
@@ -1507,7 +1683,17 @@ extension WorkbenchViewController {
 // MARK: - Scrolling
 
 extension WorkbenchViewController {
-  public func scrollBlockIntoView(blockUUID: String, animated: Bool) {
+  /**
+   Automatically adjusts the workspace's scroll view to bring a given `Block` into view.
+
+   - parameter block: The `Block` to bring into view.
+   - parameter location: The area of the screen where the block should appear. If `.anywhere`
+   is specified, the viewport is changed the minimal amount necessary to bring the block
+   into view.
+   - parameter animated: Flag determining if this scroll view adjustment should be animated.
+   */
+  public func scrollBlockIntoView(
+    blockUUID: String, location: WorkspaceView.Location = .anywhere, animated: Bool) {
     guard let block = workspace?.allBlocks[blockUUID] else {
         return
     }
@@ -1516,7 +1702,24 @@ extension WorkbenchViewController {
     // been created/positioned in the scroll view. This fixes a problem where attempting
     // to scroll blocks into the view, immediately after the workspace has loaded, does not work.
     DispatchQueue.main.async {
-      self.workspaceView.scrollBlockIntoView(block, animated: animated)
+      self.workspaceView.scrollBlockIntoView(block, location: location, animated: animated)
+    }
+  }
+
+  /**
+   Sets the content offset of the workspace's scroll view so that a specific location in the
+   workspace is visible.
+
+   - parameter location: The `Location` that should be made visible. If `.anywhere` is specified,
+   this method does nothing.
+   - parameter animated: Flag determining if this scroll view adjustment should be animated.
+   */
+  public func setViewport(to location: WorkspaceView.Location, animated: Bool) {
+    // Always perform this method at the end of the run loop, in order to ensure views have first
+    // been created/positioned in the scroll view. This fixes a problem where attempting
+    // to scroll blocks into the view, immediately after the workspace has loaded, does not work.
+    DispatchQueue.main.async {
+      self.workspaceView.setViewport(to: location, animated: animated)
     }
   }
 }
@@ -1527,7 +1730,7 @@ extension WorkbenchViewController: BlocklyPanGestureRecognizerDelegate {
   /**
    Pan gesture event handler for a block view inside `self.workspaceView`.
    */
-  public func blocklyPanGestureRecognizer(
+  open func blocklyPanGestureRecognizer(
     _ gesture: BlocklyPanGestureRecognizer, didTouchBlock block: BlockView,
     touch: UITouch, touchState: BlocklyPanGestureRecognizer.TouchState)
   {
@@ -1536,7 +1739,7 @@ extension WorkbenchViewController: BlocklyPanGestureRecognizerDelegate {
     }
 
     var blockView = block
-    let touchPosition = touch.location(in: workspaceView.scrollView.containerView)
+    let touchPosition = touch.location(in: workspaceView.scrollView)
     let workspacePosition = workspaceView.workspacePosition(fromViewPoint: touchPosition)
 
     // TODO(#44): Handle screen rotations (either lock the screen during drags or stop any
@@ -1547,8 +1750,8 @@ extension WorkbenchViewController: BlocklyPanGestureRecognizerDelegate {
         EventManager.shared.pushNewGroup()
       }
 
-      let inToolbox = gesture.view == toolboxCategoryViewController.view
-      let inTrash = gesture.view == _trashCanViewController.view
+      let inToolbox = blockView.bky_isDescendant(of: toolboxCategoryViewController.view)
+      let inTrash = blockView.bky_isDescendant(of: trashCanViewController.view)
       // If the touch is in the toolbox, copy the block over to the workspace first.
       if inToolbox {
         guard let newBlock = copyBlockToWorkspace(blockView) else {
@@ -1556,6 +1759,10 @@ extension WorkbenchViewController: BlocklyPanGestureRecognizerDelegate {
         }
         gesture.replaceBlock(block, with: newBlock)
         blockView = newBlock
+
+        if !toolboxDrawerStaysOpen {
+          removeUIStateValue(stateCategoryOpen, animated: false)
+        }
       } else if inTrash {
         let oldBlock = blockView
 
@@ -1565,13 +1772,15 @@ extension WorkbenchViewController: BlocklyPanGestureRecognizerDelegate {
         gesture.replaceBlock(block, with: newBlock)
         blockView = newBlock
         removeBlockFromTrash(oldBlock)
+
+        removeUIStateValue(stateTrashCanOpen, animated: false)
       }
 
       guard let blockLayout = blockView.blockLayout?.draggableBlockLayout else {
         return
       }
 
-      addUIStateValue(.draggingBlock)
+      addUIStateValue(stateDraggingBlock)
       do {
         try _dragger.startDraggingBlockLayout(blockLayout, touchPosition: workspacePosition)
       } catch let error {
@@ -1581,20 +1790,20 @@ extension WorkbenchViewController: BlocklyPanGestureRecognizerDelegate {
         gesture.cancelAllTouches()
       }
     } else if touchState == .changed || touchState == .ended {
-      addUIStateValue(.draggingBlock)
+      addUIStateValue(stateDraggingBlock)
       _dragger.continueDraggingBlockLayout(blockLayout, touchPosition: workspacePosition)
 
       if isGestureTouchingTrashCan(gesture) && blockLayout.block.deletable {
-        addUIStateValue(.trashCanHighlighted)
+        addUIStateValue(stateTrashCanHighlighted)
       } else {
-        removeUIStateValue(.trashCanHighlighted)
+        removeUIStateValue(stateTrashCanHighlighted)
       }
     }
 
-    if touchState == .ended {
+    if (touchState == .ended || touchState == .cancelled) && _dragger.numberOfActiveDrags > 0 {
       let touchTouchingTrashCan = isTouchTouchingTrashCan(touchPosition,
-        fromView: workspaceView.scrollView.containerView)
-      if touchTouchingTrashCan && blockLayout.block.deletable {
+        fromView: workspaceView.scrollView)
+      if touchState == .ended && touchTouchingTrashCan && blockLayout.block.deletable {
         // This block is being "deleted" -- cancel the drag and copy the block into the trash can
         _dragger.cancelDraggingBlockLayout(blockLayout)
 
@@ -1604,7 +1813,13 @@ extension WorkbenchViewController: BlocklyPanGestureRecognizerDelegate {
           var allBlocksToRemove = blockLayout.block.allBlocksForTree()
 
           try _workspaceLayoutCoordinator?.removeBlockTree(blockLayout.block)
-          try _trashCanViewController.workspaceLayoutCoordinator?.addBlockTree(blockLayout.block)
+
+          // Enable the entire block tree, before adding it to the trash can.
+          for block in blockLayout.block.allBlocksForTree() {
+            block.disabled = false
+          }
+
+          addBlockToTrash(blockLayout.block)
 
           allBlocksToRemove.removeAll()
         } catch let error {
@@ -1614,15 +1829,11 @@ extension WorkbenchViewController: BlocklyPanGestureRecognizerDelegate {
         _dragger.finishDraggingBlockLayout(blockLayout)
       }
 
-      // HACK: Re-add gesture tracking for the block view, as there is a problem re-recognizing
-      // them when dragging multiple blocks simultaneously
-      addGestureTracking(forBlockView: blockView)
-
       if _dragger.numberOfActiveDrags == 0 {
         // Update the UI state
-        removeUIStateValue(.draggingBlock)
+        removeUIStateValue(stateDraggingBlock)
         if !isGestureTouchingTrashCan(gesture) {
-          removeUIStateValue(.trashCanHighlighted)
+          removeUIStateValue(stateTrashCanHighlighted)
         }
 
         EventManager.shared.popGroup()
@@ -1638,14 +1849,23 @@ extension WorkbenchViewController: BlocklyPanGestureRecognizerDelegate {
 // MARK: - UIGestureRecognizerDelegate
 
 extension WorkbenchViewController: UIGestureRecognizerDelegate {
-  public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-    if let panGestureRecognizer = gestureRecognizer as? BlocklyPanGestureRecognizer
-      , gestureRecognizer.view == toolboxCategoryViewController.view
+  open func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+
+    if workspaceViewController.workspaceView.scrollView.isInMotion ||
+      toolboxCategoryViewController.workspaceScrollView.isInMotion ||
+      trashCanViewController.workspaceView.scrollView.isInMotion {
+      return false
+    }
+
+    if let panGestureRecognizer = gestureRecognizer as? BlocklyPanGestureRecognizer,
+      let firstTouch = panGestureRecognizer.firstTouch,
+      let toolboxView = toolboxCategoryViewController.view,
+      toolboxView.bounds.contains(firstTouch.previousLocation(in: toolboxView))
     {
       // For toolbox blocks, only fire the pan gesture if the user is panning in the direction
       // perpendicular to the toolbox scrolling. Otherwise, don't let it fire, so the user can
       // simply continue scrolling the toolbox.
-      let delta = panGestureRecognizer.firstTouchDelta(inView: panGestureRecognizer.view)
+      let delta = panGestureRecognizer.firstTouchDelta(inView: toolboxView)
 
       // Figure out angle of delta vector, relative to the scroll direction
       let radians: CGFloat
@@ -1668,7 +1888,7 @@ extension WorkbenchViewController: UIGestureRecognizerDelegate {
     return true
   }
 
-  public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+  open func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
     shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer) -> Bool
   {
     let scrollView = workspaceViewController.workspaceView.scrollView
@@ -1682,5 +1902,35 @@ extension WorkbenchViewController: UIGestureRecognizerDelegate {
     }
 
     return false
+  }
+}
+
+// MARK: - Interactive Pop Gesture Recognizer
+
+extension WorkbenchViewController {
+  fileprivate func setInteractivePopGestureRecognizerEnabled(_ enabled: Bool) {
+    guard let navigationController = self.navigationController,
+      let interactivePopGestureRecognizer = navigationController.interactivePopGestureRecognizer,
+      let gestureRecognizers = navigationController.view.gestureRecognizers else {
+        return
+    }
+
+    // Add/remove pop gesture recognizer
+    let containsRecognizer = gestureRecognizers.contains(interactivePopGestureRecognizer)
+    if enabled && !containsRecognizer {
+      navigationController.view.addGestureRecognizer(interactivePopGestureRecognizer)
+    } else if !enabled && containsRecognizer {
+      navigationController.view.removeGestureRecognizer(interactivePopGestureRecognizer)
+    }
+  }
+
+  fileprivate func interactivePopGestureRecognizerEnabled() -> Bool {
+    guard let navigationController = self.navigationController,
+      let interactivePopGestureRecognizer = navigationController.interactivePopGestureRecognizer,
+      let gestureRecognizers = navigationController.view.gestureRecognizers else {
+      return false
+    }
+
+    return gestureRecognizers.contains(interactivePopGestureRecognizer)
   }
 }

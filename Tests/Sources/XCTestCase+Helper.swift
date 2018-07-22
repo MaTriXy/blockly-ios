@@ -28,7 +28,7 @@ extension XCTestCase {
    - parameter expression: The throwable expression
    */
   func BKYAssertThrow<T: NSError>(
-    _ message: String? = nil, file: String = #file, line: UInt = #line, errorType: T.Type,
+    _ message: String? = nil, file: String = #file, line: Int = #line, errorType: T.Type,
     expression: () throws -> Void)
   {
     do {
@@ -60,43 +60,8 @@ extension XCTestCase {
    - returns: The return value of the expression or `nil` if the expression could not be evaluated.
    */
   func BKYAssertDoesNotThrow<T>(
-    _ message: String? = nil, _ file: String = #file, _ line: UInt = #line,
+    message: String? = nil, file: String = #file, line: Int = #line,
     _ expression: () throws -> T?) -> T?
-  {
-    do {
-      return try expression()
-    } catch let error {
-      recordFailure(
-        withDescription: bky_failureDescription("Expression threw an error", message, error),
-        inFile: file, atLine: line, expected: true)
-    }
-    return nil
-  }
-
-  /**
-   Assertion for testing that an expression does not throw an error.
-
-   If the assertion passes, the result of the evaluated expression is returned.
-   If not, `nil` is returned.
-
-   Usage:
-   ```
-   if let variable = BKYAssertDoesNotThrow({ try SomeObject() }) {
-   }
-   ```
-
-   - parameter expression: The throwable expression
-   - parameter message: [Optional] The message to display if the assertion fails.
-   - parameter file: [Optional] The file where the expression is being called.
-   - parameter line: [Optional] The line in the `file` where the expression is being called.
-   - returns: The return value of the expression or `nil` if the expression could not be evaluated.
-   - note: This version of `BKYAssertDoesNotThrow` was created primarily for use in
-   `if let` or `guard let` assignments. It is functionally equivalent to the other version of
-   `BKYAssertDoesNotThrow`.
-   */
-  func BKYAssertDoesNotThrow<T>(
-    _ expression: () throws -> T?, _ message: String? = nil, _ file: String = #file,
-    _ line: UInt = #line) -> T?
   {
     do {
       return try expression()
@@ -114,7 +79,7 @@ extension XCTestCase {
   {
     let conciseFunctionName: String
     if let range = function.range(of: "(") {
-      conciseFunctionName = function.substring(to: range.lowerBound)
+      conciseFunctionName = String(function[..<range.lowerBound])
     } else {
       conciseFunctionName = function
     }

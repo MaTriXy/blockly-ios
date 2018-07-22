@@ -19,7 +19,7 @@ import Foundation
  View for rendering a `FieldVariableLayout`.
  */
 @objc(BKYFieldVariableView)
-open class FieldVariableView: FieldView {
+@objcMembers open class FieldVariableView: FieldView {
   // MARK: - Properties
 
   /// Convenience property for accessing `self.layout` as a `FieldVariableLayout`
@@ -72,16 +72,22 @@ open class FieldVariableView: FieldView {
         dropDownView.borderCornerRadius =
           fieldVariableLayout.config.viewUnit(for: LayoutConfig.FieldCornerRadius)
         dropDownView.horizontalSpacing =
-          fieldVariableLayout.config.viewUnit(for: LayoutConfig.InlineXPadding)
+          fieldVariableLayout.config.viewUnit(for: LayoutConfig.FieldDropdownXSpacing)
         dropDownView.verticalSpacing =
-          fieldVariableLayout.config.viewUnit(for: LayoutConfig.InlineYPadding)
+          fieldVariableLayout.config.viewUnit(for: LayoutConfig.FieldDropdownYSpacing)
         dropDownView.textFont = fieldVariableLayout.config.font(for: LayoutConfig.GlobalFont)
         dropDownView.textColor =
           fieldVariableLayout.config.color(for: LayoutConfig.FieldEditableTextColor)
+        dropDownView.dropDownArrowTintColor = dropDownView.textColor
+        dropDownView.dropDownBackgroundColor =
+          fieldVariableLayout.config.color(for: LayoutConfig.FieldDropdownBackgroundColor)
+        dropDownView.borderColor =
+          fieldVariableLayout.config.color(for: LayoutConfig.FieldDropdownBorderColor)
 
-        let size = DropdownView.defaultDropDownArrowImage()?.size ?? CGSize.zero
+        let size = DropdownView.defaultDropDownArrowImageSize()
         let scale = fieldVariableLayout.engine.scale
-        dropDownView.dropDownArrowImageSize = CGSize(width: size.width * scale, height: size.height * scale)
+        dropDownView.dropDownArrowImageSize =
+          CGSize(width: size.width * scale, height: size.height * scale)
       }
     }
   }
@@ -104,18 +110,21 @@ extension FieldVariableView: FieldLayoutMeasurer {
     }
 
     let borderWidth = layout.config.viewUnit(for: LayoutConfig.FieldLineWidth)
-    let xSpacing = layout.config.viewUnit(for: LayoutConfig.InlineXPadding)
-    let ySpacing = layout.config.viewUnit(for: LayoutConfig.InlineYPadding)
+    let xSpacing = layout.config.viewUnit(for: LayoutConfig.FieldDropdownXSpacing)
+    let ySpacing = layout.config.viewUnit(for: LayoutConfig.FieldDropdownYSpacing)
     let measureText = fieldVariableLayout.variable
     let font = layout.config.font(for: LayoutConfig.GlobalFont)
-    let size = DropdownView.defaultDropDownArrowImage()?.size ?? CGSize.zero
+    let size = DropdownView.defaultDropDownArrowImageSize()
     let scale = fieldVariableLayout.engine.scale
     let dropDownArrowImageSize = CGSize(width: size.width * scale, height: size.height * scale)
 
-    return DropdownView.measureSize(
+    var measureSize = DropdownView.measureSize(
       text: measureText, dropDownArrowImageSize: dropDownArrowImageSize,
       textFont: font, borderWidth: borderWidth, horizontalSpacing: xSpacing,
       verticalSpacing: ySpacing)
+    measureSize.height =
+      max(measureSize.height, layout.config.viewUnit(for: LayoutConfig.FieldMinimumHeight))
+    return measureSize
   }
 }
 
@@ -148,8 +157,24 @@ extension FieldVariableView: DropdownViewDelegate {
     viewController.options = options
     viewController.selectedIndex =
       options.index { $0.value == fieldVariableLayout.variable } ?? -1
-    popoverDelegate?
-      .layoutView(self, requestedToPresentPopoverViewController: viewController, fromView: self)
+
+    popoverDelegate?.layoutView(self,
+                                requestedToPresentPopoverViewController: viewController,
+                                fromView: self,
+                                presentationDelegate: self)
+  }
+}
+
+// MARK: - UIPopoverPresentationControllerDelegate
+
+extension FieldVariableView: UIPopoverPresentationControllerDelegate {
+  public func prepareForPopoverPresentation(
+    _ popoverPresentationController: UIPopoverPresentationController) {
+    guard let rtl = self.fieldVariableLayout?.engine.rtl else { return }
+
+    // Prioritize arrow directions so the popover opens in a way more consistent with other field
+    // popovers.
+    popoverPresentationController.bky_prioritizeArrowDirections([.up, .down, .left], rtl: rtl)
   }
 }
 
@@ -195,15 +220,25 @@ extension FieldVariableView: DropdownOptionsViewControllerDelegate {
     let renameText = message(forKey: "BKY_IOS_VARIABLES_RENAME_BUTTON")
     renameView.addAction(UIAlertAction(title: cancelText, style: .default, handler: nil))
     let renameAlertAction = UIAlertAction(title: renameText, style: .default) {
-      [weak renameView] _ in
-      guard let textField = renameView?.textFields?[0],
+      [weak renameView, weak self] _ in
+      guard let renameView = renameView,
+        let variableView = self else {
+          return
+      }
+      guard let textField = renameView.textFields?[0],
         let newName = textField.text?.trimmingCharacters(in: .whitespacesAndNewlines),
         fieldVariableLayout.isValidName(newName) else
       {
-        self.renameVariable(fieldVariableLayout: fieldVariableLayout,
+        variableView.renameVariable(fieldVariableLayout: fieldVariableLayout,
                             error: message(forKey: "BKY_IOS_VARIABLES_EMPTY_NAME_ERROR"))
         return
       }
+
+      // We call this to balance out the presentation call, allowing the workspace
+      // to perform any necessary state cleanup.
+      variableView.popoverDelegate?.layoutView(variableView,
+                                               requestedToDismissPopoverViewController: renameView,
+                                               animated: false)
 
       EventManager.shared.groupAndFireEvents {
         fieldVariableLayout.renameVariable(to: newName)

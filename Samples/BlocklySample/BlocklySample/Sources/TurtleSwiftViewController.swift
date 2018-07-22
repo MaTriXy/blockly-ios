@@ -170,6 +170,7 @@ class TurtleSwiftViewController: UIViewController, TurtleViewControllerInterface
     _webView = WKWebView(frame: webViewContainer.bounds, configuration: configuration)
     _webView.autoresizingMask = [.flexibleHeight, .flexibleWidth]
     _webView.translatesAutoresizingMaskIntoConstraints = true
+    _webView.navigationDelegate = self
     webViewContainer.autoresizesSubviews = true
     webViewContainer.addSubview(_webView)
 
@@ -188,20 +189,26 @@ class TurtleSwiftViewController: UIViewController, TurtleViewControllerInterface
     _dateFormatter.dateFormat = "HH:mm:ss.SSS"
   }
 
+  override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+
+    loadWorkspace()
+  }
+
   override func viewWillDisappear(_ animated: Bool) {
     super.viewWillDisappear(animated)
 
     _codeGeneratorService.cancelAllRequests()
-  }
 
-  override var prefersStatusBarHidden : Bool {
-    return true
+    saveWorkspace()
   }
 
   // MARK: - Private
 
   @IBAction internal dynamic func didPressPlay(_ button: UIButton) {
     do {
+      saveWorkspace()
+
       if _currentlyRunning {
         if (_currentRequestUUID != "") {
           guard let uuid = _currentRequestUUID else {
@@ -301,6 +308,33 @@ class TurtleSwiftViewController: UIViewController, TurtleViewControllerInterface
     self.codeText.text = (self.codeText.text ?? "") +
       "[\(_dateFormatter.string(from: Date()))] \(trimmedText)\n"
   }
+
+  // MARK: - Load/Save Workspace
+
+  fileprivate func saveWorkspace() {
+    guard let workspace = _workbenchViewController.workspace else {
+      return
+    }
+
+    do {
+      let xml = try workspace.toXML()
+      FileHelper.saveContents(xml, to: "turtle_swift_workspace.xml")
+    } catch let error {
+      print("Could not save workspace to disk: \(error)")
+    }
+  }
+
+  fileprivate func loadWorkspace() {
+    if let xml = FileHelper.loadContents(of: "turtle_swift_workspace.xml") {
+      do {
+        let workspace = Workspace()
+        try workspace.loadBlocks(fromXMLString: xml, factory: _workbenchViewController.blockFactory)
+        try _workbenchViewController.loadWorkspace(workspace)
+      } catch let error {
+        print("Could not load workspace from disk: \(error)")
+      }
+    }
+  }
 }
 
 /**
@@ -308,7 +342,7 @@ class TurtleSwiftViewController: UIViewController, TurtleViewControllerInterface
  intermediary object here to act as a delegate so we can more easily break a potential retain cycle
  between WKUserContentController and TurtleSwiftViewController.
  */
-class ScriptMessageHandler : NSObject, WKScriptMessageHandler {
+fileprivate class ScriptMessageHandler : NSObject, WKScriptMessageHandler {
   weak var delegate : WKScriptMessageHandler?
 
   init(_ delegate: WKScriptMessageHandler) {
@@ -347,7 +381,8 @@ extension TurtleSwiftViewController: WKScriptMessageHandler {
             _lastHighlightedBlockUUID = blockID
           }
           if _allowScrollingToBlockView {
-            _workbenchViewController.scrollBlockIntoView(blockUUID: blockID, animated: true)
+            _workbenchViewController
+              .scrollBlockIntoView(blockUUID: blockID, location: .anywhere, animated: true)
           }
         }
       case "unhighlightLastBlock":
@@ -357,6 +392,11 @@ extension TurtleSwiftViewController: WKScriptMessageHandler {
         }
       case "finishExecution":
         self.resetRequests()
+      case "scrollTo":
+        if let x = dictionary["x"] as? CGFloat,
+           let y = dictionary["y"] as? CGFloat {
+          _webView.scrollView.contentOffset = CGPoint(x: x, y: y)
+        }
       default:
         print("Unrecognized method")
     }
@@ -372,12 +412,30 @@ extension TurtleSwiftViewController: WorkbenchViewControllerDelegate {
     // We need to disable automatic block view scrolling / block highlighting based on the latest
     // user interaction.
 
-    // Only allow automatic scrolling if the user tapped on the workspace.
-    _allowScrollingToBlockView = state.isSubset(of: [.didTapWorkspace])
+    if _allowScrollingToBlockView {
+      // Only continue to allow automatic scrolling if the user tapped on the workspace.
+      _allowScrollingToBlockView =
+        state.isSubset(of: [workbenchViewController.stateDidTapWorkspace])
+    }
 
-    // Only allow block highlighting if the user tapped/panned the workspace or opened either the
-    // toolbox or trash can.
-    _allowBlockHighlighting =
-      state.isSubset(of: [.didTapWorkspace, .didPanWorkspace, .categoryOpen, .trashCanOpen])
+    if _allowBlockHighlighting {
+      // Only continue to allow block highlighting if the user tapped/panned the workspace or
+      // opened either the toolbox or trash can.
+      _allowBlockHighlighting = state.isSubset(of: [
+        workbenchViewController.stateDidTapWorkspace,
+        workbenchViewController.stateDidPanWorkspace,
+        workbenchViewController.stateCategoryOpen,
+        workbenchViewController.stateTrashCanOpen])
+    }
+  }
+}
+
+// MARK: - WKNavigationDelegate
+
+extension TurtleSwiftViewController:  WKNavigationDelegate {
+  func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+    let width = webView.bounds.width
+    let height = webView.bounds.height
+    webView.evaluateJavaScript("Turtle.setBounds(\(width), \(height));")
   }
 }

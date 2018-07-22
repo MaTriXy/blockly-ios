@@ -19,7 +19,7 @@ import UIKit
  Abstract class for storing information on how to render and position an `Input` on-screen.
  */
 @objc(BKYInputLayout)
-open class InputLayout: Layout {
+@objcMembers open class InputLayout: Layout {
   // MARK: - Properties
 
   /// The target `Input` to layout
@@ -35,6 +35,11 @@ open class InputLayout: Layout {
 
   /// The corresponding layouts for `self.input.fields[]`
   public fileprivate(set) final var fieldLayouts = [FieldLayout]()
+
+  /// The line height of the first line in the input layout, specified as a Workspace coordinate
+  /// system unit. It is used for vertical alignment purposes and should be updated during
+  /// `performLayout(includeChildren:)`.
+  open var firstLineHeight: CGFloat = 0
 
   /// Flag for if this input is the first child in its parent's block layout
   open var isFirstChild: Bool {

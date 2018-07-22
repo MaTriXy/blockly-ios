@@ -43,7 +43,7 @@ class FieldXMLTest: XCTestCase {
     XCTAssertEqual("field", fieldXML?.name)
     XCTAssertEqual(1, fieldXML?.attributes.count)
     XCTAssertEqual("a_field", fieldXML?.attributes["name"])
-    XCTAssertEqual("false", fieldXML?.value)
+    XCTAssertEqual("FALSE", fieldXML?.value)
     XCTAssertEqual(0, fieldXML?.children.count)
   }
 
@@ -88,8 +88,12 @@ class FieldXMLTest: XCTestCase {
   }
 
   func testSerializeXML_FieldImage() {
-    let field =
-      FieldImage(name: "a_field", imageLocation: "some_image.png", size: WorkspaceSize.zero, altText: "")
+    let field = FieldImage(
+      name: "a_field",
+      imageLocation: "some_image.png",
+      size: WorkspaceSize.zero,
+      altText: "",
+      flipRtl: false)
     let fieldXML = BKYAssertDoesNotThrow { try field.toXMLElement() }
 
     // Expected: nil

@@ -19,7 +19,7 @@ import Foundation
  Utility class for creating `UIColor` instances.
  */
 @objc(BKYColorHelper)
-public class ColorHelper: NSObject {
+@objcMembers public class ColorHelper: NSObject {
   /**
    Parses a RGB string and returns its corresponding color.
 
@@ -32,12 +32,13 @@ public class ColorHelper: NSObject {
 
     // Strip "#" if it exists
     if rgbUpper.hasPrefix("#") {
-      rgbUpper = rgbUpper.substring(from: rgbUpper.characters.index(after: rgbUpper.startIndex))
+      let index = rgbUpper.index(after: rgbUpper.startIndex)
+      rgbUpper = String(rgbUpper[index...])
     }
 
     // Verify that the string contains 6 valid hexidecimal characters
     let invalidCharacters = CharacterSet(charactersIn: "0123456789ABCDEF").inverted
-    if rgbUpper.characters.count != 6 ||
+    if rgbUpper.count != 6 ||
       rgbUpper.rangeOfCharacter(from: invalidCharacters) != nil {
       return nil
     }

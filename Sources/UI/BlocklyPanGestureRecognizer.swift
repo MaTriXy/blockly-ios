@@ -54,7 +54,7 @@ public protocol BlocklyPanGestureRecognizerDelegate: class {
  The blockly gesture recognizer, which detects pan gestures on blocks in the workspace.
  */
 @objc(BKYBlocklyPanGestureRecognizer)
-open class BlocklyPanGestureRecognizer: UIGestureRecognizer {
+@objcMembers open class BlocklyPanGestureRecognizer: UIGestureRecognizer {
   // MARK: - Constants
 
   /**
@@ -68,7 +68,9 @@ open class BlocklyPanGestureRecognizer: UIGestureRecognizer {
       /// Specifies an individual touch has just changed on a `BlockView`
       changed,
       /// Specifies an individual touch has just ended on a `BlockView`
-      ended
+      ended,
+      /// Specifies an individual touch has been cancelled on a `BlockView`.
+      cancelled
   }
 
   // MARK: - Properties
@@ -78,6 +80,11 @@ open class BlocklyPanGestureRecognizer: UIGestureRecognizer {
 
   /// An ordered list of blocks being dragged by the recognizer.
   private var _blocks = [BlockView]()
+
+  /// Returns the first touch that's been captured by this gesture recognizer, if it exists.
+  open var firstTouch: UITouch? {
+    return !_touches.isEmpty ? _touches[0] : nil
+  }
 
   // TODO(#176): Replace maximumTouches
 
@@ -112,6 +119,7 @@ open class BlocklyPanGestureRecognizer: UIGestureRecognizer {
    */
   open override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
     super.touchesBegan(touches, with:event)
+
     for touch in touches {
       let location = touch.location(in: view)
 
@@ -148,6 +156,7 @@ open class BlocklyPanGestureRecognizer: UIGestureRecognizer {
    */
   open override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
     super.touchesMoved(touches, with:event)
+
     // If the gesture has yet to start, check if it should start.
     if state == .possible {
       for touch in touches {
@@ -157,12 +166,13 @@ open class BlocklyPanGestureRecognizer: UIGestureRecognizer {
         let previousPosition = touch.previousLocation(in: view)
         let distance = hypotf(Float(previousPosition.x - touchPosition.x),
                               Float(previousPosition.y - touchPosition.y))
-        // If the distance is sufficient, begin the gesture.
+
         if distance > minimumPanDistance {
+          // The distance is sufficient, begin the gesture.
           state = .began
           break
-        // If not, check the next touch to see if it should begin the gesture.
         } else {
+          // Check the next touch to see if it should begin the gesture.
           continue
         }
       }
@@ -171,10 +181,10 @@ open class BlocklyPanGestureRecognizer: UIGestureRecognizer {
       if state == .possible {
         return
       }
-    // Set the state to changed, so anything listening to the standard gesture recognizer can
-    // listen to standard gesture events. Note UIGestureRecognizer requires setting the state to
-    // changed even if it's already there, to fire the correct delegates.
     } else if state == .began || state == .changed {
+      // Set the state to changed, so anything listening to the standard gesture recognizer can
+      // listen to standard gesture events. Note UIGestureRecognizer requires setting the state to
+      // changed even if it's already there, to fire the correct delegates.
       state = .changed
     }
 
@@ -219,6 +229,7 @@ open class BlocklyPanGestureRecognizer: UIGestureRecognizer {
    */
   open override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
     super.touchesEnded(touches, with:event)
+
     for touch in touches {
       if let index = _touches.index(of: touch) {
         let block = _blocks[index]
@@ -244,10 +255,10 @@ open class BlocklyPanGestureRecognizer: UIGestureRecognizer {
 
     if _touches.count == 0 {
       if state == .changed {
-        // If the gesture succeeded, end the gesture.
+        // The gesture succeeded, end the gesture.
         state = .ended
       } else {
-        // If the gesture never began, cancel the gesture.
+        // The gesture never began, cancel the gesture.
         state = .cancelled
       }
     }
@@ -258,9 +269,19 @@ open class BlocklyPanGestureRecognizer: UIGestureRecognizer {
    */
   open override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
     super.touchesCancelled(touches, with: event)
+
     for touch in touches {
       if let index = _touches.index(of: touch) {
         _touches.remove(at: index)
+
+        // If the gesture recognizer has started recognizing touches, fire delegate to notify
+        // of touches being cancelled.
+        if state == .began || state == .changed {
+          targetDelegate?.blocklyPanGestureRecognizer(self,
+                                                      didTouchBlock: _blocks[index],
+                                                      touch: touch,
+                                                      touchState: .cancelled)
+        }
         _blocks.remove(at: index)
       }
     }
@@ -296,10 +317,17 @@ open class BlocklyPanGestureRecognizer: UIGestureRecognizer {
    */
   open func firstTouchDelta(inView view: UIView?) -> CGPoint {
     if _touches.count > 0 {
-      let currentPosition = _touches[0].location(in: view)
-      let previousPosition = _touches[0].previousLocation(in: view)
+      if #available(iOS 9.1, *) {
+        let currentPosition = _touches[0].preciseLocation(in: view)
+        let previousPosition = _touches[0].precisePreviousLocation(in: view)
 
-      return currentPosition - previousPosition
+        return currentPosition - previousPosition
+      } else {
+        let currentPosition = _touches[0].location(in: view)
+        let previousPosition = _touches[0].previousLocation(in: view)
+
+        return currentPosition - previousPosition
+      }
     }
 
     return CGPoint.zero
@@ -339,24 +367,24 @@ open class BlocklyPanGestureRecognizer: UIGestureRecognizer {
   // MARK: - Private
 
   /**
-   Utility function for finding the first ancestor that is a `BlockView`.
+   Utility function for finding the first ancestor that is a draggable `BlockView`.
 
    - parameter view: The view to find an ancestor of
-   - returns: The first ancestor of the `UIView` that is a `BlockView`
+   - returns: The first ancestor of the `UIView` that is a draggable `BlockView`.
    */
   private func owningBlockView(_ view: UIView?) -> BlockView? {
     var currentView = view
-    while !(currentView is BlockView) {
-      currentView = currentView?.superview
-      if currentView == nil {
-        return nil
+
+    while currentView != nil && currentView != self.view {
+      if let blockView = currentView as? BlockView,
+        let blockLayout = blockView.blockLayout,
+        blockLayout == blockLayout.draggableBlockLayout {
+        return blockView
       }
 
-      if currentView == self.view {
-        return nil
-      }
+      currentView = currentView?.superview
     }
 
-    return currentView as? BlockView
+    return nil
   }
 }

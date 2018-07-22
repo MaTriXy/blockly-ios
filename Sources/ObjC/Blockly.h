@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#import <WebKit/WebKit.h>
 #import <UIKit/UIKit.h>
 
 //! Project version number for Blockly.
@@ -25,5 +26,4 @@ FOUNDATION_EXPORT const unsigned char BlocklyVersionString[];
 #import "BKYBlockJSONFile.h"
 #import "BKYEdgeInsets.h"
 #import "BKYLayoutConfigStructs.h"
-#import "BKYWorkbenchViewController.h"
 #import "BKYWorkspaceUnits.h"

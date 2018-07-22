@@ -11,6 +11,12 @@ toc:
     path: /blockly/reference/ios/iOS
   - title: BKYEdgeInsetsZero
     path: /blockly/reference/ios/iOS
+  - title: BKYLayoutConfigEdgeInsets
+    path: /blockly/reference/ios/Structs/BKYLayoutConfigEdgeInsets
+  - title: BKYLayoutConfigEdgeInsetsMake
+    path: /blockly/reference/ios/iOS
+  - title: BKYLayoutConfigEdgeInsetsZero
+    path: /blockly/reference/ios/iOS
   - title: BKYLayoutConfigSize
     path: /blockly/reference/ios/Structs/BKYLayoutConfigSize
   - title: BKYLayoutConfigSizeMake
@@ -19,10 +25,6 @@ toc:
     path: /blockly/reference/ios/Structs/BKYLayoutConfigUnit
   - title: BKYLayoutConfigUnitMake
     path: /blockly/reference/ios/iOS
-  - title: BKYWorkbenchViewControllerUIState
-    path: /blockly/reference/ios/Enums/BKYWorkbenchViewControllerUIState
-  - title: BKYWorkbenchViewControllerUIStateValue
-    path: /blockly/reference/ios/Enums/BKYWorkbenchViewControllerUIStateValue
   - title: BKYWorkspacePoint
     path: /blockly/reference/ios/Structs/BKYWorkspacePoint
   - title: BKYWorkspacePointMake

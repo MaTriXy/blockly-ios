@@ -41,10 +41,6 @@ class AllFieldsWorkbenchViewController: WorkbenchViewController {
     loadToolbox()
   }
 
-  override var prefersStatusBarHidden : Bool {
-    return true
-  }
-
   // MARK: - Private
 
   private func loadBlockFactory() {
@@ -59,7 +55,8 @@ class AllFieldsWorkbenchViewController: WorkbenchViewController {
     // Create a new toolbox with a "Blocks" category
     let toolbox = Toolbox()
     let blocksCategory =
-      toolbox.addCategory(name: "Blocks", color: UIColor.yellow, icon: UIImage(named: "icon_block"))
+      toolbox.addCategory(
+        name: "Blocks", color: ColorPalette.orange.tint800, icon: UIImage(named: "icon_block"))
 
     // Add all field blocks to the "Blocks" category
     let blockNames = [

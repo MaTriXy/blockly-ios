@@ -1,3 +1,111 @@
+# [Version 1.2.2](https://github.com/google/blockly-ios/tree/1.2.2) (Feb 2018)
+
+- Changes Blockly framework to a shared scheme in order to fix compilation
+issue with Carthage
+- Updates i18n messages from Web Blockly (as of 2018/02/12)
+
+# [Version 1.2.1](https://github.com/google/blockly-ios/tree/1.2.1) (Dec 2017)
+
+Updates:
+- Opens the event framework so developers can add their own custom events.
+- Opens `WorkbenchViewController` so developers can add their own UI states.
+- Adds `keepTrashedBlocks` to the workbench, which controls if users can open
+the trash folder. By default, it is set to `false` (matching default Web
+behavior).
+- Removes use of deprecated `characters` property on Strings.
+- Changes the workbench to allow changing the viewport location based on
+workspace location, and sets it to first open at the top-leading corner of the
+workspace.
+- Fixes `FieldCheckbox` to serialize XML into capitalized values, matching Web
+behavior.
+- Fixes turtle demo so it stops highlighting/scrolling blocks into view
+if the user has edited the workspace.
+- Updates i18n messages and compiled version of Web Blockly to latest
+November 2017 release.
+
+# [Version 1.2](https://github.com/google/blockly-ios/tree/1.2) (Oct 2017)
+
+Additions:
+- The UI now respects the iOS 11 "safe area" so that all visible content and
+touch areas are displayed within the safe area. Currently, this only affects
+apps running on iPhone X, since its defined safe area doesn't fully conform
+to its screen dimensions.
+- Adds method to `WorkspaceView`, to set the viewport to a reveal a specific
+location.
+
+Updates:
+- Changes `LayoutFactory` to be a class instead of a protocol.
+- Removes `DefaultLayoutFactory` and refactors its functionality into
+`LayoutFactory`.
+- Fixes "if-return" block to automatically disable itself if it isn't connected
+to a procedure definition block.
+- Fixes Turtle demo so it is zoomable and so it no longer allows the turtle to
+run off-screen.
+- Fixes bug in RTL where zooming caused the viewport to jump to a different
+location.
+- Fixes bug in RTL where dragging the first block onto an empty canvas caused
+the block to temporarily flash at a different location.
+- Fixes WorkspaceView from adding extra canvas padding to an empty workspace.
+
+# [Version 1.1.3](https://github.com/google/blockly-ios/tree/1.1.3) (Oct 2017)
+
+Updates:
+- Updates the library to use Swift 4 syntax. This requires that developers
+update to use Xcode 9.
+- Adds `flipRtl` property to FieldImage, allowing images to be flipped in RTL
+rendering
+- Updates i18n messages and compiled version of Web Blockly to latest October
+release.
+
+Fixes:
+- Fixes bug where cancelled touches weren't being handled inside
+WorkbenchViewController, which caused state problems
+- Fixes bug where popovers could be overdismissed
+
+# [Version 1.1.2](https://github.com/google/blockly-ios/tree/1.1.2) (Sep 2017)
+
+Updates:
+- Allows disabled blocks to be dragged on the workspace
+- Adds serialization for Block properties editable, deletable, movable, disabled,
+and inputsInline
+
+Fixes:
+- Fixes code generator for iOS 11 so it sends the initial codegen request on the
+main thread
+- Fixes names of two codelab sounds
+- Fixes bug where popover delegates were being overriden, which caused undo/redo
+buttons to stay disabled after popover dismissal
+- Fixes bug where non-top-level variables didn't always show up in the variable
+drop-down picker
+- Fixes FieldLayout from implicitly updating the layout tree on model changes,
+and made it update explicitly.
+- Fixes ViewBuilder bug where it would recycle views prior to calling a delegate
+method that inspected view hierarchy
+- Fixes WorkspaceViewController bug where the didRemoveBlockView() delegate method
+wasn't being fired
+- Fixes bug where the same variable block can be created multiple times
+- Fixes Obj-C compilation error where WebKit protocol can't be found
+
+# [Version 1.1.1](https://github.com/google/blockly-ios/tree/1.1.1) (July 2017)
+
+- Fixes bug where dismissing a popover could dismiss `WorkbenchViewController`.
+- Fixes trash can folder so it always appear above the undo/redo controls.
+
+# [Version 1.1](https://github.com/google/blockly-ios/tree/1.1) (July 2017)
+
+This version packs our biggest UI update thus far! Many changes were made to make
+Blockly iOS look and feel more modern. These changes include:
+- Custom popovers for entering a number and for picking an angle
+- A fresh coat of paint to the UI that uses Material Design colors
+- Automatic vertical alignment of fields and inputs
+- Rounded block corners
+- More consistent sizing and spacing for all blocks
+- Changing block dragging so that it appears above all other layers
+- Better visibility when highlighting connections between blocks
+- Improved style configuration. More style options have been added to
+`LayoutConfig` and `DefaultLayoutConfig`.
+- Other minor UI fixes to improve usability
+
 # [Version 1.0](https://github.com/google/blockly-ios/tree/1.0.0) (May 2017)
 
 We're happy to announce that we've reached version 1.0 of Blockly iOS!

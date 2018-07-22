@@ -17,7 +17,7 @@
 
 #import <Blockly/Blockly.h>
 #import <Blockly/Blockly-Swift.h>
-
+#import "BlocklySample-Swift.h"
 
 // MARK: - ScriptMessageHandler Class
 
@@ -206,6 +206,7 @@ NSString *const TurtleObjCViewController_JSCallbackName = @"TurtleViewController
                                 configuration:configuration];
   _webView.autoresizingMask = UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth;
   _webView.translatesAutoresizingMaskIntoConstraints = true;
+  _webView.navigationDelegate = self;
   self.webViewContainer.autoresizesSubviews = true;
   [self.webViewContainer addSubview:_webView];
 
@@ -220,14 +221,25 @@ NSString *const TurtleObjCViewController_JSCallbackName = @"TurtleViewController
   self.codeText.superview.layer.borderWidth = 1;
 }
 
+- (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
+  float width = webView.bounds.size.width;
+  float height = webView.bounds.size.height;
+  [webView evaluateJavaScript:
+    [NSString stringWithFormat:@"Turtle.setBounds(%f, %f);", width, height] completionHandler:nil];
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+  [super viewWillAppear:animated];
+
+  [self loadWorkspace];
+}
+
 - (void)viewWillDisappear:(BOOL)animated {
   [super viewWillDisappear:animated];
 
   [_codeGeneratorService cancelAllRequests];
-}
 
-- (BOOL)prefersStatusBarHidden {
-  return YES;
+  [self saveWorkspace];
 }
 
 // MARK: - Private
@@ -242,6 +254,8 @@ NSString *const TurtleObjCViewController_JSCallbackName = @"TurtleViewController
 }
 
 - (IBAction)didPressPlayButton:(UIButton *)sender {
+  [self saveWorkspace];
+
   if (self.currentlyRunning) {
     if (_currentRequestUUID == nil) {
       NSLog(@"Error: The current request UUID is nil.");
@@ -352,6 +366,44 @@ NSString *const TurtleObjCViewController_JSCallbackName = @"TurtleViewController
     [NSString stringWithFormat:@"[%@] %@", [_dateFormatter stringFromDate:[NSDate date]], text]];
 }
 
+// MARK: - Load/Save Workspace
+
+- (void)saveWorkspace {
+  BKYWorkspace *workspace = self.workbenchViewController.workspace;
+
+  NSError* error = nil;
+  NSString* xml = [workspace toXMLWithError:&error];
+
+  if ([self handleError:error]) {
+    return;
+  }
+
+  [FileHelper saveContents:xml to:@"turtle_objc_workspace.xml"];
+}
+
+- (void)loadWorkspace {
+  NSString *xml = [FileHelper loadContentsOf:@"turtle_objc_workspace.xml"];
+
+  if (xml != nil) {
+    NSError* error = nil;
+
+    BKYWorkspace *workspace = [[BKYWorkspace alloc] init];
+    [workspace loadBlocksFromXMLString:xml
+                               factory:self.workbenchViewController.blockFactory
+                                 error:&error];
+
+    if ([self handleError:error]) {
+      return;
+    }
+
+    [self.workbenchViewController loadWorkspace:workspace error:&error];
+
+    if ([self handleError:error]) {
+      return;
+    }
+  }
+}
+
 // MARK: - WKScriptMessageHandler implementation
 
 - (void)userContentController:(WKUserContentController *)userContentController
@@ -367,7 +419,10 @@ NSString *const TurtleObjCViewController_JSCallbackName = @"TurtleViewController
         _lastHighlightedBlockUUID = blockID;
       }
       if (_allowScrollingToBlockView) {
-        [_workbenchViewController scrollBlockIntoViewWithBlockUUID:blockID animated:true];
+        [_workbenchViewController
+          scrollBlockIntoViewWithBlockUUID:blockID
+                                  location:BKYWorkspaceViewLocationAnywhere
+                                  animated:true];
         _lastHighlightedBlockUUID = blockID;
       }
     }
@@ -379,6 +434,10 @@ NSString *const TurtleObjCViewController_JSCallbackName = @"TurtleViewController
     }
   } else if ([method isEqualToString:@"finishExecution"]) {
     [self resetRequests];
+  } else if ([method isEqualToString:@"scrollTo"]) {
+    CGFloat x = (CGFloat) [dictionary[@"x"] doubleValue];
+    CGFloat y = (CGFloat) [dictionary[@"y"] doubleValue];
+    [_webView.scrollView setContentOffset:CGPointMake(x, y)];
   } else {
     NSLog(@"Unrecognized method");
   }
@@ -387,14 +446,25 @@ NSString *const TurtleObjCViewController_JSCallbackName = @"TurtleViewController
 // MARK: - WorkbenchViewControllerDelegate implementation
 
 - (void)workbenchViewController:(BKYWorkbenchViewController *)workbenchViewController
-                 didUpdateState:(BKYWorkbenchViewControllerUIState)state {
-  // Only allow automatic scrolling if the user tapped the workspace.
-  _allowScrollingToBlockView = (state & ~BKYWorkbenchViewControllerUIStateDidTapWorkspace) == 0;
-  // Only allow block highlighting if the user tapped/panned or opened the toolbox or trash can.
-  _allowBlockHighlighting = (state & ~(BKYWorkbenchViewControllerUIStateDidTapWorkspace |
-                                       BKYWorkbenchViewControllerUIStateDidPanWorkspace |
-                                       BKYWorkbenchViewControllerUIStateCategoryOpen |
-                                       BKYWorkbenchViewControllerUIStateTrashCanOpen)) == 0;
+               didUpdateState:(NSSet *)state {
+
+  if (_allowScrollingToBlockView) {
+    // Only continue to allow automatic scrolling if the user tapped the workspace.
+    _allowScrollingToBlockView =
+      [state isSubsetOfSet:[NSSet setWithObject:@(workbenchViewController.stateDidTapWorkspace)]];
+  }
+
+  if (_allowBlockHighlighting) {
+    // Only continue to allow block highlighting if the user tapped/panned or opened the toolbox or
+    // trash can.
+    _allowBlockHighlighting = [state isSubsetOfSet: [NSSet setWithObjects:
+      @(workbenchViewController.stateDidTapWorkspace),
+      @(workbenchViewController.stateDidPanWorkspace),
+      @(workbenchViewController.stateCategoryOpen),
+      @(workbenchViewController.stateTrashCanOpen),
+      nil
+    ]];
+  }
 }
 
 @end

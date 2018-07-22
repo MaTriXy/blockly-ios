@@ -103,4 +103,4 @@ Blockly.JavaScript['turtle_colour'] = function(block) {
       block.id + '\');\n';
 };
 
-Blockly.JavaScript['turtle_repeat_internal'] = Blockly.JavaScript['controls_repeat'];
+Blockly.JavaScript['angle_picker'] = Blockly.JavaScript['math_number'];

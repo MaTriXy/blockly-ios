@@ -21,7 +21,7 @@ import Foundation
  Abstract class for storing information on how to render and position a `Block` on-screen.
  */
 @objc(BKYBlockLayout)
-open class BlockLayout: Layout {
+@objcMembers open class BlockLayout: Layout {
   // MARK: - Static Properties
 
   /// Flag that should be used when `self.highlighted` has been updated
@@ -125,9 +125,9 @@ open class BlockLayout: Layout {
     }
   }
 
-  /// Flag determining if user interaction should be enabled for the corresponding view
+  /// Flag determining if user interaction should be enabled for the corresponding view.
   open var userInteractionEnabled: Bool {
-    return !block.disabled
+    return true
   }
 
   /// The position of the block's leading edge X offset, specified as a Workspace coordinate
@@ -136,7 +136,13 @@ open class BlockLayout: Layout {
     return 0
   }
 
-  /// Flag indicating if this block has had its user interaction disabled.
+  /// The line height of the first line in the block layout, specified as a Workspace coordinate
+  /// system unit. It is used for vertical alignment purposes and should be updated during
+  /// `performLayout(includeChildren:)`.
+  open var firstLineHeight: CGFloat = 0
+
+  /// Flag indicating if this block is disabled, which means it will be excluded from code
+  /// generation.
   open var disabled: Bool {
     get { return block.disabled }
     set {

@@ -19,7 +19,7 @@ import Foundation
  Class for a `FieldNumber`-based `Layout`.
  */
 @objc(BKYFieldNumberLayout)
-open class FieldNumberLayout: FieldLayout {
+@objcMembers open class FieldNumberLayout: FieldLayout {
 
   // MARK: - Properties
 
@@ -37,6 +37,21 @@ open class FieldNumberLayout: FieldLayout {
         updateLayoutUpTree()
       }
     }
+  }
+
+  /// The minimum value of this number field. If `nil`, it is unconstrained by a minimum value.
+  public var minimumValue: Double? {
+    return fieldNumber.minimumValue
+  }
+
+  /// The maximum value of this number field. If `nil`, it is unconstrained by a maximum value.
+  public var maximumValue: Double? {
+    return fieldNumber.maximumValue
+  }
+
+  /// Flag indicating if the number field is constrained to being an integer value.
+  public var isInteger: Bool {
+    return fieldNumber.isInteger
   }
 
   // MARK: - Initializers
@@ -60,8 +75,7 @@ open class FieldNumberLayout: FieldLayout {
     // Update current text value to match the field now
     currentTextValue = fieldNumber.textValue
 
-    // Perform a layout up the tree
-    updateLayoutUpTree()
+    super.didUpdateField(field)
   }
 
   // MARK: - Public
@@ -74,9 +88,11 @@ open class FieldNumberLayout: FieldLayout {
     captureChangeEvent {
       fieldNumber.setValueFromLocalizedText(text)
 
-      // Update `currentTextValue` to match the current localized text value of `fieldNumber`,
-      // which will automatically update the corresponding view, if necessary.
+      // Update `currentTextValue` to match the current localized text value of `fieldNumber`.
       currentTextValue = fieldNumber.textValue
     }
+
+    // Perform a layout up the tree
+    updateLayoutUpTree()
   }
 }

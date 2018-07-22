@@ -16,10 +16,21 @@
 import Foundation
 
 /**
+ Protocol for events that occur on a `BlockGroupView`.
+ */
+@objc(BKYBlockGroupViewDelegate)
+protocol BlockGroupViewDelegate: class {
+  /**
+   Event that is called when a `BlockGroupView` has its `dragging` property.
+   */
+  func blockGroupViewDidUpdateDragging(_ blockGroupView: BlockGroupView)
+}
+
+/**
  View for rendering a `BlockGroupLayout`.
  */
 @objc(BKYBlockGroupView)
-open class BlockGroupView: LayoutView, ZIndexedView {
+@objcMembers open class BlockGroupView: LayoutView, ZIndexedView {
 
   // MARK: - Properties
 
@@ -27,6 +38,9 @@ open class BlockGroupView: LayoutView, ZIndexedView {
   open var blockGroupLayout: BlockGroupLayout? {
     return layout as? BlockGroupLayout
   }
+
+  /// Delegate for listening to events that occur on this instance.
+  weak var delegate: BlockGroupViewDelegate?
 
   /// The z-index of the block group view
   public fileprivate(set) final var zIndex: UInt = 0 {
@@ -36,6 +50,15 @@ open class BlockGroupView: LayoutView, ZIndexedView {
           // Re-order this view within its parent BlockGroupView view
           superview.upsertView(self)
         }
+      }
+    }
+  }
+
+  /// Flag indicating if this view is being dragged.
+  public var dragging: Bool = false {
+    didSet {
+      if dragging != oldValue {
+        delegate?.blockGroupViewDidUpdateDragging(self)
       }
     }
   }
@@ -76,6 +99,8 @@ open class BlockGroupView: LayoutView, ZIndexedView {
     }
 
     if flags.intersectsWith([Layout.Flag_NeedsDisplay, BlockGroupLayout.Flag_UpdateDragging]) {
+      self.dragging = layout.dragging
+
       // Update the alpha interaction. This part isn't animated since it can look weird when
       // connecting new blocks into an existing block group that was previously highlighted before
       // (the new blocks will change from fully opaque to translucent, and then quickly animate

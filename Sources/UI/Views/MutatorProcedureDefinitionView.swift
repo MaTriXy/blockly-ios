@@ -21,7 +21,7 @@ import Foundation
  View for rendering a `MutatorProcedureDefinition`.
  */
 @objc(MutatorProcedureDefinitionView)
-open class MutatorProcedureDefinitionView: LayoutView {
+@objcMembers open class MutatorProcedureDefinitionView: LayoutView {
   // MARK: - Properties
 
   /// Convenience property accessing `self.layout` as `MutatorProcedureDefinitionLayout`
@@ -31,7 +31,7 @@ open class MutatorProcedureDefinitionView: LayoutView {
 
   /// A button for opening the popover settings
   open fileprivate(set) lazy var popoverButton: UIButton = {
-    let button = UIButton(type: .custom)
+    let button = UIButton(type: .system)
     button.autoresizingMask = [.flexibleWidth, .flexibleHeight]
     if let image = ImageLoader.loadImage(named: "settings",
                                          forClass: MutatorProcedureDefinitionView.self) {
@@ -76,10 +76,16 @@ open class MutatorProcedureDefinitionView: LayoutView {
       if flags.intersectsWith([Layout.Flag_NeedsDisplay, Layout.Flag_UpdateViewFrame]) {
         // Update the view frame
         self.frame = layout.viewFrame
+
+        // Force the mutator view to always be drawn behind sibling views (which could be other
+        // blocks).
+        self.superview?.sendSubview(toBack: self)
       }
 
       let topPadding = layout.engine.viewUnitFromWorkspaceUnit(4)
       self.popoverButton.contentEdgeInsets = UIEdgeInsetsMake(topPadding, 0, topPadding, 0)
+      self.popoverButton.tintColor =
+        layout.config.color(for: DefaultLayoutConfig.MutatorSettingsButtonColor)
 
       self.isUserInteractionEnabled = layout.userInteractionEnabled
     }
@@ -92,7 +98,7 @@ open class MutatorProcedureDefinitionView: LayoutView {
 
   // MARK: - Private
 
-  private dynamic func openPopover(_ sender: UIButton) {
+  @objc private dynamic func openPopover(_ sender: UIButton) {
     guard let mutatorLayout = self.mutatorProcedureDefinitionLayout else {
       return
     }
@@ -104,11 +110,20 @@ open class MutatorProcedureDefinitionView: LayoutView {
 
     popoverDelegate?.layoutView(self,
                                 requestedToPresentPopoverViewController: viewController,
-                                fromView: popoverButton)
+                                fromView: popoverButton,
+                                presentationDelegate: self)
+  }
+}
 
-    // Set the arrow direction of the popover to be up/down/right, so it won't
-    // obstruct the view of the parameters
-    viewController.popoverPresentationController?.permittedArrowDirections = [.up, .down, .right]
+// MARK: - UIPopoverPresentationControllerDelegate
+
+extension MutatorProcedureDefinitionView: UIPopoverPresentationControllerDelegate {
+  public func prepareForPopoverPresentation(
+    _ popoverPresentationController: UIPopoverPresentationController) {
+    guard let rtl = self.mutatorProcedureDefinitionLayout?.engine.rtl else { return }
+
+    // Prioritize arrow directions, so it won't obstruct the view of the parameters
+    popoverPresentationController.bky_prioritizeArrowDirections([.down, .up, .right], rtl: rtl)
   }
 }
 
@@ -140,7 +155,7 @@ fileprivate class MutatorProcedureDefinitionPopoverController: UITableViewContro
 
   /// The font to use for general text in this popup
   private var generalFont: UIFont {
-    return mutatorLayout.engine.config.popoverFont(for: LayoutConfig.GlobalFont)
+    return mutatorLayout.engine.config.popoverFont(for: LayoutConfig.PopoverLabelFont)
   }
 
   /// The font to use for titles in this popup
@@ -152,9 +167,6 @@ fileprivate class MutatorProcedureDefinitionPopoverController: UITableViewContro
   private var subtitleFont: UIFont {
     return mutatorLayout.engine.config.popoverFont(for: LayoutConfig.PopoverSubtitleFont)
   }
-
-  /// Pointer used for distinguishing changes in `tableView.contentSize`
-  private var _kvoContextContentSize = 0
 
   // MARK: - Initializers
 
@@ -168,22 +180,29 @@ fileprivate class MutatorProcedureDefinitionPopoverController: UITableViewContro
 
     self.init(style: .grouped)
     self.mutatorLayout = mutatorLayout
-  }
 
-  // MARK: - Super
-
-  override func viewDidLoad() {
-    super.viewDidLoad()
-
+    // Register custom cells
     tableView.setEditing(true, animated: false)
-    tableView.rowHeight = UITableViewAutomaticDimension
-    tableView.estimatedRowHeight = 44 * mutatorLayout.engine.popoverScale
     tableView.register(ParameterCellView.self,
                        forCellReuseIdentifier: IDENTIFIER_PARAMETER_CELL)
     tableView.register(UITableViewHeaderFooterView.self,
                        forHeaderFooterViewReuseIdentifier: IDENTIFIER_PARAMETER_HEADER)
+
+    // Set all estimated heights to 0 so that `tableView.contentSize` is calculated properly
+    // instead of using estimated values.
+    tableView.estimatedRowHeight = 0
+    tableView.estimatedSectionHeaderHeight = 0
+    tableView.estimatedSectionFooterHeight = 0
+
+    // Load data immediately
+    tableView.reloadData()
+
+    // Set the preferred content size immediately so that the correct popover arrow direction
+    // can be determined by the instantiator of this object.
     updatePreferredContentSize()
   }
+
+  // MARK: - Super
 
   override func numberOfSections(in tableView: UITableView) -> Int {
     // If the mutator returns a value, then it can toggle its "allow statements" option. A new
@@ -353,9 +372,8 @@ fileprivate class MutatorProcedureDefinitionPopoverController: UITableViewContro
   // MARK: - Update state
 
   func updatePreferredContentSize() {
-    // Update preferred content size
-    self.presentingViewController?.presentedViewController?.preferredContentSize =
-      CGSize(width: 300, height: tableView.contentSize.height)
+    // Set `preferredContentSize` using the correct value of `tableView.contentSize`.
+    preferredContentSize = CGSize(width: 300, height: tableView.contentSize.height)
   }
 
   func configureParametersHeaderView(_ headerView: UITableViewHeaderFooterView) {
@@ -413,7 +431,7 @@ fileprivate class MutatorProcedureDefinitionPopoverController: UITableViewContro
     }
   }
 
-  dynamic func updateAllowStatements() {
+  @objc dynamic func updateAllowStatements() {
     if let cell = tableView.cellForRow(at: IndexPath(row: 0, section: SECTION_OTHER_OPTIONS)),
       let accessoryView = cell.accessoryView as? UISwitch
     {
@@ -422,7 +440,7 @@ fileprivate class MutatorProcedureDefinitionPopoverController: UITableViewContro
     }
   }
 
-  func updateParameterTextField(_ textField: UITextField) {
+  @objc func updateParameterTextField(_ textField: UITextField) {
     guard let cell = textField.bky_firstAncestor(ofType: ParameterCellView.self) else {
       return
     }

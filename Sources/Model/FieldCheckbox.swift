@@ -19,7 +19,7 @@ import Foundation
 An input field for a checkbox.
 */
 @objc(BKYFieldCheckbox)
-public final class FieldCheckbox: Field {
+@objcMembers public final class FieldCheckbox: Field {
   // MARK: - Properties
 
   /// `true` if the checkbox field is checked, `false` if it is not.
@@ -49,10 +49,10 @@ public final class FieldCheckbox: Field {
   }
 
   public override func setValueFromSerializedText(_ text: String) throws {
-    self.checked = (text.caseInsensitiveCompare("true") == .orderedSame)
+    self.checked = (text.caseInsensitiveCompare("TRUE") == .orderedSame)
   }
 
   public override func serializedText() throws -> String? {
-    return self.checked ? "true" : "false"
+    return self.checked ? "TRUE" : "FALSE"
   }
 }

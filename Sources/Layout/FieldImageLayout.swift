@@ -19,7 +19,7 @@ import Foundation
  Class for a `FieldImage`-based `Layout`.
  */
 @objc(BKYFieldImageLayout)
-open class FieldImageLayout: FieldLayout {
+@objcMembers open class FieldImageLayout: FieldLayout {
 
   // MARK: - Properties
 
@@ -29,6 +29,11 @@ open class FieldImageLayout: FieldLayout {
   /// The size of the image field, expressed as a Workspace coordinate system size
   open var size: WorkspaceSize {
     return fieldImage.size
+  }
+
+  /// Flag determining if this image should be flipped horizontally in RTL rendering.
+  open var flipRtl: Bool {
+    return fieldImage.flipRtl
   }
 
   // MARK: - Initializers
@@ -43,13 +48,6 @@ open class FieldImageLayout: FieldLayout {
   public init(fieldImage: FieldImage, engine: LayoutEngine, measurer: FieldLayoutMeasurer.Type) {
     self.fieldImage = fieldImage
     super.init(field: fieldImage, engine: engine, measurer: measurer)
-  }
-
-  // MARK: - Super
-
-  open override func didUpdateField(_ field: Field) {
-    // Perform a layout up the tree
-    updateLayoutUpTree()
   }
 
   // MARK: - Public

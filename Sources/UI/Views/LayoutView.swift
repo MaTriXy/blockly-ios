@@ -36,12 +36,15 @@ public protocol LayoutPopoverDelegate {
    - parameter layoutView: The `LayoutView` that made the request
    - parameter viewController: The `UIViewController` to present
    - parameter fromView: The `UIView` where the popover should pop up from
+   - parameter presentationDelegate: A `UIPopoverPresentationControllerDelegate` that should
+   be notified when presentation events are fired.
    - returns: `true` if the `viewController` was presented. `false` otherwise.
    */
   @discardableResult
   func layoutView(_ layoutView: LayoutView,
                  requestedToPresentPopoverViewController viewController: UIViewController,
-                 fromView: UIView) -> Bool
+                 fromView: UIView,
+                 presentationDelegate: UIPopoverPresentationControllerDelegate?) -> Bool
 
   /**
    Event is called when a layout view requests to dismiss a view controller.
@@ -59,7 +62,7 @@ public protocol LayoutPopoverDelegate {
 Abstract class for rendering a `UIView` backed by a `Layout`.
 */
 @objc(BKYLayoutView)
-open class LayoutView: UIView {
+@objcMembers open class LayoutView: UIView {
 
   // MARK: - Properties
 
@@ -113,6 +116,20 @@ open class LayoutView: UIView {
    - parameter code: The code block to run.
    */
   open func runAnimatableCode(_ animated: Bool, code: @escaping () -> Void) {
+    runAnimatableCode(animated, code: code, completion: nil)
+  }
+
+  /**
+   Runs a code block, allowing it to be run immediately or via a preset animation.
+
+   - parameter animated: Flag determining if the `code` should be animated.
+   - parameter code: The code block to run.
+   - parameter completion: The completion block to run after the code block has finished running.
+   This block has no return value and takes a single Boolean argument that indicates whether or not
+   the animations actually finished before the completion handler was called.
+  */
+  open func runAnimatableCode(
+    _ animated: Bool, code: @escaping () -> Void, completion: ((Bool) -> Void)? = nil) {
     if animated {
       let duration = layout?.config.double(for: LayoutConfig.ViewAnimationDuration) ?? 0
       if duration > 0 {
@@ -121,13 +138,14 @@ open class LayoutView: UIView {
           delay: 0,
           options: [.beginFromCurrentState, .allowUserInteraction, .curveEaseInOut],
           animations: code,
-          completion: nil)
+          completion: completion)
 
         return
       }
     }
 
     code()
+    completion?(true)
   }
 }
 

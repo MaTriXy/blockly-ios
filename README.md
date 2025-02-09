@@ -1,3 +1,11 @@
+**The blockly-ios project is _no longer actively developed_ by the
+Google Blockly team. 
+If you are looking to create a new Blockly-based app, we recommend using
+the [web version](http://github.com/google/blockly) in a WebView.  We
+have also create an
+[XCode demonstration project](https://github.com/google/blockly/tree/develop/demos/mobile/ios)
+that does exactly this.**
+
 # Blockly for iOS
 
 [Blockly][1] is a library for building drag-and-drop visual editors for
@@ -21,9 +29,6 @@ Blockly for iOS includes:
 - All major features available in Blockly for [Web][2] and [Android][3]
 - Multi-touch support (currently only on iOS)
 - Block animations (currently only on iOS)
-
-The Blockly team is actively working on achieving feature parity across
-all three platforms to support cross-platform development.
 
 # Requirements
 
